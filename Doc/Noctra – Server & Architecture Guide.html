@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>SpotBukk – Server & Architecture Guide (Beginner Friendly)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <style>
+    :root {
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      --bg: #fff;
+      --fg: #1a1a2e;
+      --mut: #5b5b73;
+      --card: #f4f4fa;
+      --line: #dcdcea;
+      --ac: #5b3fd4
+    }
+
+    @media (prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f0f1a;
+        --fg: #ececf6;
+        --mut: #a0a0b8;
+        --card: #1a1a2b;
+        --line: #2e2e45;
+        --ac: #a58bff
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f0f1a;
+      --fg: #ececf6;
+      --mut: #a0a0b8;
+      --card: #1a1a2b;
+      --line: #2e2e45;
+      --ac: #a58bff
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif
+    }
+
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 24px 18px 64px
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin: .2em 0
+    }
+
+    h2 {
+      margin-top: 2.4em;
+      padding-bottom: .3em;
+      border-bottom: 2px solid var(--line)
+    }
+
+    .sub {
+      color: var(--mut)
+    }
+
+    .box {
+      overflow-x: auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      margin: 14px 0
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: .93rem
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 7px 10px;
+      text-align: left;
+      vertical-align: top
+    }
+
+    th {
+      background: var(--card)
+    }
+
+    code {
+      background: var(--card);
+      padding: 1px 6px;
+      border-radius: 5px;
+      font-size: .9em
+    }
+
+    .tip {
+      border-left: 4px solid var(--ac);
+      background: var(--card);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      margin: 14px 0
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>SpotBukk – Server & Architecture Guide</h1>
+    <p class="sub">A beginner-friendly explanation of what the server does, how domain, hosting and server differ, and
+      how SpotBukk should be set up for the website now and a mobile app later.</p>
+
+    <h2>1. What does a server actually do?</h2>
+    <p>Think of the server as the <b>engine room</b> of the product. The customer's phone or browser is only the screen.
+      The important data and rules live on the server.</p>
+    <div class="tip"><b>Simple way to remember:</b> the Angular website is the <b>face</b>, the backend is the
+      <b>brain</b>, the database is the <b>memory</b>.</div>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  W[Website - Angular] --> I((Internet))
+  A[Mobile app - Android / iOS] --> I
+  I --> S[SERVER]
+  S --> API[API: business logic]
+  S --> DB[(Database: users, events, tickets, payments)]
+  S --> SV[Services: payment, email, QR, notifications]
+</pre>
+    </div>
+    <p>The server handles: user accounts and login, events, registrations, ticket generation, payments, QR validation,
+      staff check-ins, admin work, emails and notifications, analytics, database access, security and business rules.
+    </p>
+
+    <h2>2. Does the server host the website too?</h2>
+    <p>Yes, but that is only one of its jobs. A server runs several pieces side by side.</p>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  D[Domain: SpotBukk.in] --> N[DNS]
+  N --> S[Server]
+  S --> W[Website]
+  S --> A[Backend API]
+  S --> DB[(Database)]
+  S --> F[File / image storage]
+  S --> B[Background services]
+</pre>
+    </div>
+    <p><code>SpotBukk.in</code> can show the website and <code>api.SpotBukk.in</code> can be the backend API. The
+      Angular site then talks to <code>https://api.SpotBukk.in</code>.</p>
+
+    <h2>3. One backend for the website and the future app</h2>
+    <p>Do <b>not</b> build one backend for the website and another for the app. Build one API and let every front end
+      use it.</p>
+    <div class="box">
+      <pre class="mermaid">
+flowchart LR
+  W[Website - Angular] --> API[SpotBukk API]
+  M[Mobile app - Android / iOS] --> API
+  API --> DB[(Database)]
+</pre>
+    </div>
+    <p>Both share the same users, events, registrations, payments, tickets, QR codes, staff, admin, notifications and
+      database. When the app arrives later, authentication, tickets, payments, QR and admin do not need to be rebuilt.
+      The app simply uses the existing API. This is why the backend should never be designed around Angular.</p>
+
+    <h2>4. Domain vs hosting vs server</h2>
+    <p>These three get mixed up a lot.</p>
+    <table>
+      <tr>
+        <th>Term</th>
+        <th>Meaning</th>
+        <th>Example</th>
+      </tr>
+      <tr>
+        <td><b>Domain</b></td>
+        <td>The address people type into the browser</td>
+        <td><code>SpotBukk.in</code></td>
+      </tr>
+      <tr>
+        <td><b>Hosting provider</b></td>
+        <td>The company that gives you the server and infrastructure</td>
+        <td>A cloud company that rents you a VPS</td>
+      </tr>
+      <tr>
+        <td><b>Server</b></td>
+        <td>The computer that runs your software</td>
+        <td>Ubuntu Linux VPS, 4 CPU, 8 GB RAM, 160 GB SSD</td>
+      </tr>
+    </table>
+    <div class="box">
+      <pre class="mermaid">
+flowchart LR
+  A[Domain: SpotBukk.in] --> B[Hosting provider]
+  B --> C[Server / VPS]
+  C --> D[SpotBukk: website, API, database, services]
+</pre>
+    </div>
+
+    <h2>5. What server should SpotBukk start with?</h2>
+    <p>Keep it simple at first. You do not need a huge server on day one; the final size depends on expected traffic,
+      database size, image storage and payment volume. Leave room to scale.</p>
+    <table>
+      <tr>
+        <th>Item</th>
+        <th>Initial recommendation</th>
+      </tr>
+      <tr>
+        <td>OS</td>
+        <td>Ubuntu LTS</td>
+      </tr>
+      <tr>
+        <td>CPU / RAM</td>
+        <td>4 vCPU / 8 GB</td>
+      </tr>
+      <tr>
+        <td>Storage</td>
+        <td>160+ GB SSD or NVMe</td>
+      </tr>
+      <tr>
+        <td>Network</td>
+        <td>Public IPv4 (IPv6 optional)</td>
+      </tr>
+      <tr>
+        <td>Docker</td>
+        <td>Latest stable version</td>
+      </tr>
+      <tr>
+        <td>Database</td>
+        <td>PostgreSQL</td>
+      </tr>
+      <tr>
+        <td>Reverse proxy</td>
+        <td>Nginx or equivalent</td>
+      </tr>
+      <tr>
+        <td>Deployment</td>
+        <td>Docker Compose to start</td>
+      </tr>
+      <tr>
+        <td>Must have</td>
+        <td>HTTPS, firewall, backups, monitoring</td>
+      </tr>
+    </table>
+
+    <h2>6. What software runs on the server?</h2>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  U[Ubuntu Linux] --> D[Docker]
+  D --> RP[Reverse proxy - Nginx]
+  D --> FE[Angular frontend]
+  D --> BE[Backend API]
+  D --> PG[(PostgreSQL)]
+  D --> RD[(Redis - optional)]
+  D --> WK[Background workers]
+</pre>
+    </div>
+    <p><b>Why Docker?</b> Each part runs in its own isolated container, so the frontend, API and database stay separate
+      and are easier to update. Docker Compose can start the whole set with one command on a single server.</p>
+
+    <h2>7. What is a reverse proxy?</h2>
+    <p>It is the front door. Nginx sits first and decides where each request goes.</p>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  I((Internet)) --> N[Nginx / reverse proxy]
+  N -- SpotBukk.in --> FE[Angular app]
+  N -- api.SpotBukk.in --> API[Backend API]
+  API --> DB[(PostgreSQL)]
+</pre>
+    </div>
+    <p>It handles incoming requests, HTTPS/TLS, routing, forwarding API calls, serving the Angular files, security
+      headers and connections. Only the proxy is exposed to the internet, never the database.</p>
+
+    <h2>8. Where does the database live?</h2>
+    <p>At first, on the same server. The backend talks to it over a private network, and the database is <b>never</b>
+      opened to the internet.</p>
+    <div class="box">
+      <pre class="mermaid">
+flowchart LR
+  subgraph Public
+    N[Nginx]
+  end
+  subgraph Private network
+    BE[Backend] --> PG[(PostgreSQL)]
+  end
+  N --> BE
+</pre>
+    </div>
+    <p>If SpotBukk grows, the database can move to a dedicated managed database server.</p>
+
+    <h2>9. What about images and uploads?</h2>
+    <p>SpotBukk will have event posters, venue photos, artist images, profile pictures and ticket assets. Decide early
+      not to keep all of them on the application server forever. Use separate object/file storage, which can later be
+      served through a CDN.</p>
+    <div class="box">
+      <pre class="mermaid">
+flowchart LR
+  subgraph Server
+    A[Application]
+    D[(Database)]
+  end
+  subgraph Object storage
+    E[Event images]
+    V[Venue images]
+    O[Other uploads]
+  end
+  A --> E
+  A --> V
+  A --> O
+</pre>
+    </div>
+
+    <h2>10. Which ports should be public?</h2>
+    <p>This is very important. Only web traffic should reach the server from outside.</p>
+    <div class="box">
+      <pre class="mermaid">
+flowchart LR
+  I((Internet)) -- 80 HTTP --> N[Nginx]
+  I -- 443 HTTPS --> N
+  N --> FE[Frontend]
+  N --> BE[Backend]
+  I -. blocked .-> X1[PostgreSQL 5432]
+  I -. blocked .-> X2[Redis 6379]
+  I -. blocked .-> X3[Backend 3000]
+  I -. blocked .-> X4[Database admin ports]
+</pre>
+    </div>
+    <p>Keep database, Redis, backend and admin ports private unless there is a very specific, secured reason to open
+      one.</p>
+
+    <h2>11. The final target architecture</h2>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  I((Internet)) --> FW[Firewall]
+  FW --> N[Nginx]
+  N --> FE[Frontend - Angular on SpotBukk.in]
+  N --> API[Backend API on api.SpotBukk.in]
+  API --> PG[(PostgreSQL)]
+  API --> RD[(Redis)]
+  API --> WK[Workers]
+  WK --> EM[Email / notifications]
+  API --> OS[Object storage: event images and media]
+  M[Mobile app] -. same API .-> API
+</pre>
+    </div>
+
+    <h2>12. Domain setup</h2>
+    <table>
+      <tr>
+        <th>Address</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td><code>SpotBukk.in</code> and <code>www.SpotBukk.in</code></td>
+        <td>Public website</td>
+      </tr>
+      <tr>
+        <td><code>api.SpotBukk.in</code></td>
+        <td>Backend API (website and app both use it)</td>
+      </tr>
+      <tr>
+        <td><code>SpotBukk.in/admin</code>, <code>SpotBukk.in/staff</code></td>
+        <td>Admin and staff areas, protected by backend authorization</td>
+      </tr>
+    </table>
+    <p>Separate <code>admin.SpotBukk.in</code> or <code>staff.SpotBukk.in</code> are possible, but not required. For the
+      client, keeping one public address is simpler.</p>
+
+    <h2>13. How to set it up, step by step</h2>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  S1[1. Buy domain] --> S2[2. Buy VPS]
+  S2 --> S3[3. Secure the server]
+  S3 --> S4[4. Install Docker + Compose]
+  S4 --> S5[5. Deploy the application: docker compose up -d]
+  S5 --> S6[6. Deploy PostgreSQL with persistent storage]
+  S6 --> S7[7. Deploy backend API]
+  S7 --> S8[8. Deploy Angular via Nginx]
+  S8 --> S9[9. Point DNS to server IP]
+  S9 --> S10[10. Enable HTTPS]
+</pre>
+    </div>
+    <table>
+      <tr>
+        <th>Step</th>
+        <th>Details</th>
+      </tr>
+      <tr>
+        <td>1. Domain</td>
+        <td>Buy something like <code>SpotBukk.in</code>.</td>
+      </tr>
+      <tr>
+        <td>2. VPS</td>
+        <td>Ubuntu LTS, 4 vCPU, 8 GB RAM, 160+ GB SSD, public IP.</td>
+      </tr>
+      <tr>
+        <td>3. Secure</td>
+        <td>SSH keys, firewall, non-root deploy user, automatic security updates, Fail2ban/rate limiting, backup plan.
+        </td>
+      </tr>
+      <tr>
+        <td>4. Docker</td>
+        <td>Install Docker and Docker Compose.</td>
+      </tr>
+      <tr>
+        <td>5. Deploy</td>
+        <td>Run the stack with <code>docker compose up -d</code>.</td>
+      </tr>
+      <tr>
+        <td>6. Database</td>
+        <td>PostgreSQL with persistent storage.</td>
+      </tr>
+      <tr>
+        <td>7. Backend</td>
+        <td>Start the backend API container.</td>
+      </tr>
+      <tr>
+        <td>8. Angular</td>
+        <td>Build to static files and serve them through Nginx.</td>
+      </tr>
+      <tr>
+        <td>9. DNS</td>
+        <td>Point <code>SpotBukk.in</code> and <code>api.SpotBukk.in</code> to the server IP.</td>
+      </tr>
+      <tr>
+        <td>10. HTTPS</td>
+        <td>Enable for both. No login or payment system should ever run on plain HTTP.</td>
+      </tr>
+    </table>
+    <div class="tip"><b>Remember: a container is not a backup.</b> Containers are temporary. PostgreSQL needs persistent
+      storage <i>and</i> a separate, tested backup strategy.</div>
+
+    <h2>14. The big takeaway</h2>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  B[SpotBukk BACKEND - REST API] --> A[Angular website]
+  B --> AN[Android app]
+  B --> IO[iOS app]
+</pre>
+    </div>
+    <p>Design the backend around the API, not around Angular. Authentication, events, registrations, payments, tickets,
+      QR, staff, admin and analytics are built once and reused by every client.</p>
+
+    <h2>Quick glossary</h2>
+    <table>
+      <tr>
+        <th>Word</th>
+        <th>Plain meaning</th>
+      </tr>
+      <tr>
+        <td>API</td>
+        <td>The set of doors the website or app uses to ask the server for things</td>
+      </tr>
+      <tr>
+        <td>DNS</td>
+        <td>The phone book that turns <code>SpotBukk.in</code> into the server's IP address</td>
+      </tr>
+      <tr>
+        <td>VPS</td>
+        <td>A rented virtual computer in a data center</td>
+      </tr>
+      <tr>
+        <td>Docker</td>
+        <td>A tool that runs each part of the app in its own box</td>
+      </tr>
+      <tr>
+        <td>Reverse proxy</td>
+        <td>The front door that routes visitors to the right part</td>
+      </tr>
+      <tr>
+        <td>HTTPS</td>
+        <td>Encrypted web traffic, the padlock in the browser</td>
+      </tr>
+      <tr>
+        <td>Redis</td>
+        <td>A fast temporary store, useful for caching and queues</td>
+      </tr>
+      <tr>
+        <td>Object storage</td>
+        <td>A separate place for images and files</td>
+      </tr>
+    </table>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+
+  <!--claude-mermaid-runtime-begin:3477-->
+  <style>
+    .mermaid-diagram {
+      margin-block: 4px
+    }
+
+    .mermaid-diagram svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto
+    }
+  </style>
+  <script src="/_runtime/mermaid-11.16.1.min.js"></script>
+  <script>(function () {
+      var CFG = { "palettes": { "light": { "surface": "#f4efe4", "text": "#42392e", "line": "#8a7f6d", "border": "#7a6c52", "bg": "#fffdf8" }, "dark": { "surface": "#262b34", "text": "#f2f3f5", "line": "#a8adb8", "border": "#9aa4b8", "bg": "#1f232b" } } };
+      if (typeof mermaid === 'undefined') return;
+      var pres = Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function (p) { if (p.hasAttribute('data-claude-mermaid-claimed')) return false; p.setAttribute('data-claude-mermaid-claimed', '1'); return true; });
+      if (!pres.length) return;
+      var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      var root = document.documentElement;
+      var items = pres.map(function (pre) {
+        var mount = document.createElement('div'); mount.className = 'mermaid-diagram';
+        return { pre: pre, mount: mount, src: pre.textContent || '' };
+      });
+      var seq = 0;
+      var renderGen = 0;
+      var lastKey = '';
+      function pageBg(fallback) {
+        var els = [document.body, document.documentElement];
+        for (var i = 0; i < els.length; i++) {
+          var c = els[i] && getComputedStyle(els[i]).backgroundColor;
+          if (c && c !== 'transparent' && c !== 'rgba(0, 0, 0, 0)') return c;
+        }
+        return fallback;
+      }
+      function render() {
+        var theme = root.getAttribute('data-theme');
+        var dark = theme === 'dark' || (!!(mq && mq.matches) && theme !== 'light');
+        var pal = dark ? CFG.palettes.dark : CFG.palettes.light;
+        var bg = pageBg(pal.bg);
+        var key = (dark ? 'd' : 'l') + '|' + bg;
+        if (key === lastKey) return;
+        lastKey = key;
+        var gen = ++renderGen;
+        var font = getComputedStyle(document.body).fontFamily || 'sans-serif';
+        var nat = { useMaxWidth: false };
+        mermaid.initialize({
+          startOnLoad: false, securityLevel: 'strict', theme: 'base',
+          flowchart: nat, sequence: nat, er: nat, state: nat, class: nat, pie: nat,
+          gantt: nat, journey: nat, timeline: nat, gitGraph: nat, mindmap: nat, xyChart: nat,
+          quadrantChart: nat, sankey: nat, c4: nat, requirement: nat, block: nat,
+          packet: nat, kanban: nat, architecture: nat, radar: nat,
+          themeVariables: {
+            background: bg, mainBkg: pal.surface, primaryColor: pal.surface,
+            primaryTextColor: pal.text, lineColor: pal.line, primaryBorderColor: pal.border,
+            nodeBorder: pal.border, clusterBorder: pal.border, edgeLabelBackground: bg,
+            clusterBkg: 'rgba(127,127,127,0.07)', titleColor: pal.text,
+            darkMode: dark, rowOdd: bg, rowEven: 'rgba(127,127,127,0.07)',
+            attributeBackgroundColorOdd: bg, attributeBackgroundColorEven: 'rgba(127,127,127,0.07)',
+            fontSize: '16px', fontFamily: font
+          },
+          themeCSS: '.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+        });
+        items.forEach(function (it) {
+          var id = 'claude-mermaid-' + seq++;
+          mermaid.render(id, it.src).then(function (r) {
+            if (gen !== renderGen) return;
+            var prev = it.pre.previousElementSibling;
+            if (prev && prev.className === 'mermaid-diagram' && prev !== it.mount) return;
+            it.mount.innerHTML = r.svg;
+            if (!it.mount.parentNode) it.pre.parentNode.insertBefore(it.mount, it.pre);
+            it.pre.style.display = 'none';
+          }, function () {
+            var scratch = document.getElementById(id);
+            if (scratch) scratch.parentNode.removeChild(scratch);
+            scratch = document.getElementById('d' + id);
+            if (scratch) scratch.parentNode.removeChild(scratch);
+            if (gen !== renderGen) return;
+            if (it.mount.parentNode) it.mount.parentNode.removeChild(it.mount);
+            it.pre.style.display = '';
+          });
+        });
+      }
+      render();
+      if (mq && mq.addEventListener) mq.addEventListener('change', render);
+      if (typeof MutationObserver !== 'undefined') new MutationObserver(render).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    })();</script>
+  <!--claude-mermaid-runtime-end-->
+</body>
+
+</html>

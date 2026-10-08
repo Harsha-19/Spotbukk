@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>SpotBukk – Platform Documentation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <style>
+    :root {
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      --bg: #fff;
+      --fg: #1a1a2e;
+      --mut: #5b5b73;
+      --card: #f4f4fa;
+      --line: #dcdcea;
+      --ac: #5b3fd4
+    }
+
+    @media (prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f0f1a;
+        --fg: #ececf6;
+        --mut: #a0a0b8;
+        --card: #1a1a2b;
+        --line: #2e2e45;
+        --ac: #a58bff
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0f0f1a;
+      --fg: #ececf6;
+      --mut: #a0a0b8;
+      --card: #1a1a2b;
+      --line: #2e2e45;
+      --ac: #a58bff
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif
+    }
+
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 24px 18px 64px
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin: .2em 0
+    }
+
+    h2 {
+      margin-top: 2.4em;
+      padding-bottom: .3em;
+      border-bottom: 2px solid var(--line)
+    }
+
+    h3 {
+      margin-top: 1.6em
+    }
+
+    .sub {
+      color: var(--mut)
+    }
+
+    .box {
+      overflow-x: auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      margin: 14px 0
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: .92rem
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 7px 10px;
+      text-align: left;
+      vertical-align: top
+    }
+
+    th {
+      background: var(--card)
+    }
+
+    code {
+      background: var(--card);
+      padding: 1px 6px;
+      border-radius: 5px;
+      font-size: .9em
+    }
+
+    .note {
+      border-left: 4px solid var(--ac);
+      background: var(--card);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      margin: 14px 0
+    }
+
+    .y {
+      color: #1a9d55;
+      font-weight: 700
+    }
+
+    .n {
+      color: #d33;
+      font-weight: 700
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>SpotBukk – Platform Documentation</h1>
+    <p class="sub">Event registration, payment, digital ticketing and QR check-in. Roles: Customer · Staff · Admin.</p>
+
+    <h2>1. System overview</h2>
+    <p>SpotBukk has a public/customer side and a protected operations side. Both meet at the QR ticket: customers
+      receive it, staff scan it, the backend is the single authority that validates it.</p>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  W[SpotBukk Website]
+  W --> P[Public / Customers]
+  W --> S[Staff / Admin]
+  P --> P1[Browse events]
+  P --> P2[Register]
+  P2 --> P3[Payment]
+  P3 --> P4[Digital ticket + QR]
+  S --> S1[Staff login]
+  S --> S2[Admin login]
+  S1 --> SC[Staff scanner]
+  S2 --> AD[Admin dashboard: events, users, payments, reports]
+  S2 --> SC
+  P4 -. QR shown at venue .-> SC
+  SC --> V{Backend validates QR}
+  V -- Valid --> C[Check-in saved, ticket = USED]
+  V -- Invalid --> R[Rejected with reason]
+  C --> DB[(Database)]
+</pre>
+    </div>
+
+    <h2>2. Roles and access</h2>
+    <h3>2.1 Customer can</h3>
+    <p>Sign up / log in · browse events · view event details · register · add attendees/guests · pay · receive a digital
+      ticket · view ticket and QR · see registration and payment status · receive notifications · view booking history.
+    </p>
+    <h3>2.2 Customer must never see or reach</h3>
+    <p>QR scanner · staff check-in interface · staff tools · admin dashboard · event management · payment management ·
+      analytics · other users' registrations.</p>
+    <h3>2.3 Staff can</h3>
+    <p>Scan ticket QR · enter ticket/booking code manually · see the attendee details needed for entry (name, pass type)
+      · validate and check in · see "already used" · see invalid / expired / cancelled · view today's check-in activity.
+    </p>
+    <h3>2.4 Permission matrix (enforced by the backend)</h3>
+    <div class="box">
+      <table>
+        <tr>
+          <th>Capability</th>
+          <th>Customer</th>
+          <th>Staff</th>
+          <th>Admin</th>
+        </tr>
+        <tr>
+          <td>Browse, register, pay, view own tickets</td>
+          <td class="y">✔</td>
+          <td class="y">✔ (as a user)</td>
+          <td class="y">✔</td>
+        </tr>
+        <tr>
+          <td><code>/staff/*</code> pages</td>
+          <td class="n">✘</td>
+          <td class="y">✔</td>
+          <td class="y">✔</td>
+        </tr>
+        <tr>
+          <td>Scan / validate API</td>
+          <td class="n">✘</td>
+          <td class="y">✔</td>
+          <td class="y">✔</td>
+        </tr>
+        <tr>
+          <td>Check-in API</td>
+          <td class="n">✘</td>
+          <td class="y">✔</td>
+          <td class="y">✔</td>
+        </tr>
+        <tr>
+          <td>Staff management</td>
+          <td class="n">✘</td>
+          <td class="n">✘</td>
+          <td class="y">✔</td>
+        </tr>
+        <tr>
+          <td>Events, payments, analytics, reports</td>
+          <td class="n">✘</td>
+          <td class="n">✘</td>
+          <td class="y">✔</td>
+        </tr>
+        <tr>
+          <td>Other users' registrations</td>
+          <td class="n">✘</td>
+          <td>Only attendee data needed at the door</td>
+          <td class="y">✔</td>
+        </tr>
+      </table>
+    </div>
+    <div class="note"><b>Key rule:</b> hiding UI is not security. Even if someone types
+      <code>https://SpotBukk.com/staff/check-in</code> or calls the API directly, the server checks the authenticated
+      account's role on every request and returns <code>401</code> (not logged in) or <code>403</code> (wrong role).
+    </div>
+    <div class="box">
+      <pre class="mermaid">
+flowchart LR
+  A[Request to /staff/* or scan/check-in API] --> B{Authenticated?}
+  B -- No --> X1[401 / redirect to /staff/login]
+  B -- Yes --> C{Role = STAFF or ADMIN?}
+  C -- No, CUSTOMER --> X2[403 Forbidden]
+  C -- Yes --> D{Assigned to this event?}
+  D -- No --> X3[403 Forbidden]
+  D -- Yes --> E[Handle request + write audit log]
+</pre>
+    </div>
+
+    <h2>3. Customer journey</h2>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  A[Event] --> B[Select pass]
+  B --> C[Registration + attendees]
+  C --> D[Create payment]
+  D --> E{Payment result}
+  E -- Failed / abandoned --> F[Registration stays PENDING, can retry or expires]
+  E -- Success, confirmed by gateway webhook --> G[Registration CONFIRMED]
+  G --> H[Generate ticket per attendee]
+  H --> I[Generate secure QR token]
+  I --> J[Send email]
+  J --> K[Customer sees digital ticket in account]
+</pre>
+    </div>
+
+    <h2>4. Venue check-in flow</h2>
+    <div class="box">
+      <pre class="mermaid">
+flowchart TB
+  A[Staff login] --> B[Staff check-in screen]
+  B --> C[Scan QR or type booking code]
+  C --> D[Backend validates token]
+  D --> E{Signature valid?}
+  E -- No --> R1[INVALID]
+  E -- Yes --> F{Ticket exists and ISSUED?}
+  F -- Cancelled --> R2[CANCELLED]
+  F -- Expired --> R3[EXPIRED]
+  F -- Already USED --> R4[ALREADY USED: show time and gate]
+  F -- Issued --> G{Event matches this check-in?}
+  G -- No --> R5[WRONG EVENT]
+  G -- Yes --> H[Atomically mark USED + save check-in record]
+  H --> OK[CHECK-IN SUCCESS]
+</pre>
+    </div>
+
+    <h2>5. Sequence: payment to ticket</h2>
+    <div class="box">
+      <pre class="mermaid">
+sequenceDiagram
+  actor U as Customer
+  participant FE as Web app
+  participant API as Backend
+  participant PG as Payment gateway
+  participant M as Email service
+  U->>FE: Select pass, enter attendees
+  FE->>API: POST /registrations
+  API-->>FE: registration (PENDING)
+  FE->>API: POST /payments
+  API->>PG: Create order
+  PG-->>FE: Checkout
+  U->>PG: Pays
+  PG->>API: Webhook payment.success (signed)
+  API->>API: Registration CONFIRMED, create tickets + QR tokens
+  API->>M: Send ticket email
+  FE->>API: GET /me/tickets
+  API-->>U: Digital ticket + QR
+</pre>
+    </div>
+
+    <h2>6. Redefined / added items</h2>
+    <p>These fill gaps in the original notes:</p>
+    <table>
+      <tr>
+        <th>Area</th>
+        <th>Decision</th>
+      </tr>
+      <tr>
+        <td>Roles</td>
+        <td>A single <code>role</code> on the account: <code>CUSTOMER</code>, <code>STAFF</code>, <code>ADMIN</code>.
+          Staff accounts are created by admins only; no public staff signup.</td>
+      </tr>
+      <tr>
+        <td>Separate logins</td>
+        <td><code>/staff/login</code> and an admin login are distinct from the customer login, with stricter rate
+          limits, shorter sessions and optional 2FA for admin.</td>
+      </tr>
+      <tr>
+        <td>Payment truth</td>
+        <td>Confirm payment only from the gateway's signed webhook, never from the browser redirect. Use idempotency
+          keys so retries cannot create duplicate tickets.</td>
+      </tr>
+      <tr>
+        <td>QR token</td>
+        <td>Opaque, signed (HMAC/JWT) or random high-entropy token. Contains no personal data. Backend looks it up and
+          verifies it; the QR alone never grants entry.</td>
+      </tr>
+      <tr>
+        <td>Double scan</td>
+        <td>Check-in is one atomic update (<code>UPDATE ... WHERE status='ISSUED'</code>) in a transaction, so two staff
+          scanning at once cannot both succeed.</td>
+      </tr>
+      <tr>
+        <td>Two-step scan</td>
+        <td><code>validate</code> previews the result (read-only); <code>check-in</code> commits. Manual code entry uses
+          the same path.</td>
+      </tr>
+      <tr>
+        <td>Staff scope</td>
+        <td>Staff are assigned to specific events; they see only the data needed for entry.</td>
+      </tr>
+      <tr>
+        <td>Audit</td>
+        <td>Every scan attempt (success or fail), staff ID, time, gate/device is logged.</td>
+      </tr>
+      <tr>
+        <td>Refunds / transfers</td>
+        <td>Refund or cancellation sets the ticket to <code>CANCELLED</code> and invalidates its QR. Re-issue creates a
+          new token and revokes the old one.</td>
+      </tr>
+      <tr>
+        <td>Offline venues</td>
+        <td>Optional: pre-download signed ticket list for the event so the scanner survives poor connectivity, syncing
+          check-ins afterward.</td>
+      </tr>
+    </table>
+
+    <h2>7. Statuses</h2>
+    <div class="box">
+      <pre class="mermaid">
+stateDiagram-v2
+  [*] --> ISSUED: payment confirmed
+  ISSUED --> USED: staff check-in
+  ISSUED --> CANCELLED: refund / admin cancel
+  ISSUED --> EXPIRED: event ended
+  USED --> [*]
+  CANCELLED --> [*]
+  EXPIRED --> [*]
+</pre>
+    </div>
+    <table>
+      <tr>
+        <th>Object</th>
+        <th>Statuses</th>
+      </tr>
+      <tr>
+        <td>Registration</td>
+        <td>PENDING · CONFIRMED · CANCELLED · EXPIRED</td>
+      </tr>
+      <tr>
+        <td>Payment</td>
+        <td>CREATED · PENDING · SUCCESS · FAILED · REFUNDED</td>
+      </tr>
+      <tr>
+        <td>Ticket</td>
+        <td>ISSUED · USED · CANCELLED · EXPIRED</td>
+      </tr>
+    </table>
+
+    <h2>8. Data model</h2>
+    <div class="box">
+      <pre class="mermaid">
+erDiagram
+  USER ||--o{ REGISTRATION : makes
+  EVENT ||--o{ PASS : offers
+  EVENT ||--o{ REGISTRATION : receives
+  PASS ||--o{ REGISTRATION : selected_in
+  REGISTRATION ||--o{ ATTENDEE : includes
+  REGISTRATION ||--o{ PAYMENT : paid_by
+  ATTENDEE ||--|| TICKET : gets
+  TICKET ||--o{ CHECK_IN : scanned_as
+  USER ||--o{ CHECK_IN : performed_by_staff
+  USER ||--o{ NOTIFICATION : receives
+  USER { uuid id string email string role }
+  TICKET { uuid id string qr_token_hash string status }
+  CHECK_IN { uuid id datetime scanned_at string result string gate }
+  PAYMENT { uuid id string gateway_ref string status }
+</pre>
+    </div>
+
+    <h2>9. API sketch</h2>
+    <table>
+      <tr>
+        <th>Endpoint</th>
+        <th>Role</th>
+      </tr>
+      <tr>
+        <td><code>POST /api/auth/register, /login</code></td>
+        <td>Public</td>
+      </tr>
+      <tr>
+        <td><code>GET /api/events, /events/:id</code></td>
+        <td>Public</td>
+      </tr>
+      <tr>
+        <td><code>POST /api/registrations</code> · <code>POST /api/payments</code></td>
+        <td>Customer</td>
+      </tr>
+      <tr>
+        <td><code>GET /api/me/tickets, /me/bookings, /me/notifications</code></td>
+        <td>Customer (own data only)</td>
+      </tr>
+      <tr>
+        <td><code>POST /api/payments/webhook</code></td>
+        <td>Gateway signature</td>
+      </tr>
+      <tr>
+        <td><code>POST /api/staff/login</code></td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>POST /api/staff/scan/validate</code> · <code>POST /api/staff/check-ins</code> ·
+          <code>GET /api/staff/check-ins?date=today</code></td>
+        <td>Staff / Admin</td>
+      </tr>
+      <tr>
+        <td><code>/api/admin/*</code> (events, staff, payments, reports)</td>
+        <td>Admin</td>
+      </tr>
+    </table>
+
+    <h2>10. Security checklist</h2>
+    <ul>
+      <li>Role check middleware on every <code>/staff/*</code> and <code>/api/staff/*</code> route; default deny.</li>
+      <li>Ownership check on every customer resource (users only read their own tickets).</li>
+      <li>Hash QR tokens at rest; rate limit scan and login endpoints.</li>
+      <li>HTTPS only, secure httpOnly cookies, CSRF protection.</li>
+      <li>Webhook signature verification and idempotency.</li>
+      <li>Audit logs for all staff and admin actions.</li>
+    </ul>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+
+  <!--claude-mermaid-runtime-begin:3477-->
+  <style>
+    .mermaid-diagram {
+      margin-block: 4px
+    }
+
+    .mermaid-diagram svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto
+    }
+  </style>
+  <script src="/_runtime/mermaid-11.16.1.min.js"></script>
+  <script>(function () {
+      var CFG = { "palettes": { "light": { "surface": "#f4efe4", "text": "#42392e", "line": "#8a7f6d", "border": "#7a6c52", "bg": "#fffdf8" }, "dark": { "surface": "#262b34", "text": "#f2f3f5", "line": "#a8adb8", "border": "#9aa4b8", "bg": "#1f232b" } } };
+      if (typeof mermaid === 'undefined') return;
+      var pres = Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function (p) { if (p.hasAttribute('data-claude-mermaid-claimed')) return false; p.setAttribute('data-claude-mermaid-claimed', '1'); return true; });
+      if (!pres.length) return;
+      var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+      var root = document.documentElement;
+      var items = pres.map(function (pre) {
+        var mount = document.createElement('div'); mount.className = 'mermaid-diagram';
+        return { pre: pre, mount: mount, src: pre.textContent || '' };
+      });
+      var seq = 0;
+      var renderGen = 0;
+      var lastKey = '';
+      function pageBg(fallback) {
+        var els = [document.body, document.documentElement];
+        for (var i = 0; i < els.length; i++) {
+          var c = els[i] && getComputedStyle(els[i]).backgroundColor;
+          if (c && c !== 'transparent' && c !== 'rgba(0, 0, 0, 0)') return c;
+        }
+        return fallback;
+      }
+      function render() {
+        var theme = root.getAttribute('data-theme');
+        var dark = theme === 'dark' || (!!(mq && mq.matches) && theme !== 'light');
+        var pal = dark ? CFG.palettes.dark : CFG.palettes.light;
+        var bg = pageBg(pal.bg);
+        var key = (dark ? 'd' : 'l') + '|' + bg;
+        if (key === lastKey) return;
+        lastKey = key;
+        var gen = ++renderGen;
+        var font = getComputedStyle(document.body).fontFamily || 'sans-serif';
+        var nat = { useMaxWidth: false };
+        mermaid.initialize({
+          startOnLoad: false, securityLevel: 'strict', theme: 'base',
+          flowchart: nat, sequence: nat, er: nat, state: nat, class: nat, pie: nat,
+          gantt: nat, journey: nat, timeline: nat, gitGraph: nat, mindmap: nat, xyChart: nat,
+          quadrantChart: nat, sankey: nat, c4: nat, requirement: nat, block: nat,
+          packet: nat, kanban: nat, architecture: nat, radar: nat,
+          themeVariables: {
+            background: bg, mainBkg: pal.surface, primaryColor: pal.surface,
+            primaryTextColor: pal.text, lineColor: pal.line, primaryBorderColor: pal.border,
+            nodeBorder: pal.border, clusterBorder: pal.border, edgeLabelBackground: bg,
+            clusterBkg: 'rgba(127,127,127,0.07)', titleColor: pal.text,
+            darkMode: dark, rowOdd: bg, rowEven: 'rgba(127,127,127,0.07)',
+            attributeBackgroundColorOdd: bg, attributeBackgroundColorEven: 'rgba(127,127,127,0.07)',
+            fontSize: '16px', fontFamily: font
+          },
+          themeCSS: '.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+        });
+        items.forEach(function (it) {
+          var id = 'claude-mermaid-' + seq++;
+          mermaid.render(id, it.src).then(function (r) {
+            if (gen !== renderGen) return;
+            var prev = it.pre.previousElementSibling;
+            if (prev && prev.className === 'mermaid-diagram' && prev !== it.mount) return;
+            it.mount.innerHTML = r.svg;
+            if (!it.mount.parentNode) it.pre.parentNode.insertBefore(it.mount, it.pre);
+            it.pre.style.display = 'none';
+          }, function () {
+            var scratch = document.getElementById(id);
+            if (scratch) scratch.parentNode.removeChild(scratch);
+            scratch = document.getElementById('d' + id);
+            if (scratch) scratch.parentNode.removeChild(scratch);
+            if (gen !== renderGen) return;
+            if (it.mount.parentNode) it.mount.parentNode.removeChild(it.mount);
+            it.pre.style.display = '';
+          });
+        });
+      }
+      render();
+      if (mq && mq.addEventListener) mq.addEventListener('change', render);
+      if (typeof MutationObserver !== 'undefined') new MutationObserver(render).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    })();</script>
+  <!--claude-mermaid-runtime-end-->
+</body>
+
+</html>
