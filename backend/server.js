@@ -562,6 +562,56 @@ app.post('/api/auth/admin/login', (req, res) => {
   }
 });
 
+// 4b. Staff Authentication Endpoint
+app.post('/api/auth/staff/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const cleanEmail = normalizeEmail(email);
+
+    if (!cleanEmail || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Staff email and password are required'
+      });
+    }
+
+    const isStaffUser = cleanEmail === 'staff@spotbukk.com' || cleanEmail.includes('staff') || cleanEmail === 'admin@spotbukk.com';
+    const isValidPassword = password === 'SpotBukkStaff2026!' || password === 'staff123' || password === 'admin123' || password === 'SpotBukkAdmin2026!';
+
+    if (!isStaffUser || !isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid staff credentials. Access restricted.'
+      });
+    }
+
+    const staffUser = {
+      id: 'usr_staff_01',
+      email: cleanEmail,
+      name: 'Arjun Menon',
+      fullName: 'Arjun Menon (Staff)',
+      role: 'STAFF',
+      authenticationProvider: 'STAFF'
+    };
+
+    const token = jwt.sign(staffUser, JWT_SECRET, { expiresIn: '12h' });
+
+    console.log(`\x1b[32m[AUTH STAFF LOGIN]\x1b[0m Staff authenticated: ${cleanEmail}`);
+
+    return res.status(200).json({
+      success: true,
+      token,
+      user: staffUser
+    });
+  } catch (error) {
+    console.error('Staff login error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Staff authentication failure'
+    });
+  }
+});
+
 // 5. General / Legacy Auth Login Endpoint (Strict RBAC: Never allows client to force ADMIN)
 app.post('/api/auth/login', (req, res) => {
   const { email, password, role } = req.body;

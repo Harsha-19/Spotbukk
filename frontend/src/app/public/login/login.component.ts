@@ -5,7 +5,7 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 
-type LoginMode = 'options' | 'phone' | 'email' | 'admin';
+type LoginMode = 'options' | 'phone' | 'email' | 'admin' | 'staff';
 type VerificationStep = 'input' | 'otp';
 
 @Component({
@@ -27,9 +27,18 @@ type VerificationStep = 'input' | 'otp';
             </a>
 
             <!-- Mode-dependent Titles -->
-            <div *ngIf="mode() !== 'admin'" class="header-titles">
+            <div *ngIf="mode() !== 'admin' && mode() !== 'staff'" class="header-titles">
               <h1 class="welcome-title">Welcome Back</h1>
               <p class="welcome-subtitle">Sign in to continue</p>
+            </div>
+
+            <div *ngIf="mode() === 'staff'" class="header-titles">
+              <div class="admin-badge">
+                <span class="security-dot"></span>
+                Venue Operations Portal
+              </div>
+              <h1 class="welcome-title">Staff Sign In</h1>
+              <p class="welcome-subtitle">Door clearance & check-in personnel</p>
             </div>
 
             <div *ngIf="mode() === 'admin'" class="header-titles">
@@ -123,12 +132,18 @@ type VerificationStep = 'input' | 'otp';
               <span class="chevron-arrow">&rarr;</span>
             </button>
 
-            <!-- Switcher to Admin Sign In -->
+            <!-- Switcher to Staff and Admin Sign In -->
             <div class="card-footer-switch">
               <span class="curator-text">Staff or Organizer?</span>
-              <button type="button" class="admin-link-btn" (click)="switchToMode('admin')">
-                Sign in to Admin Portal &rarr;
-              </button>
+              <div style="display: flex; justify-content: center; gap: 12px; align-items: center;">
+                <button type="button" class="admin-link-btn" (click)="switchToMode('staff')">
+                  Staff Portal &rarr;
+                </button>
+                <span style="color: var(--text-muted);">&bull;</span>
+                <button type="button" class="admin-link-btn" (click)="switchToMode('admin')">
+                  Admin Portal &rarr;
+                </button>
+              </div>
             </div>
           </div>
 
@@ -405,6 +420,82 @@ type VerificationStep = 'input' | 'otp';
               <div class="demo-creds-hint">
                 <span>Default test administrator credentials:</span>
                 <code>admin&#64;spotbukk.com / SpotBukkAdmin2026!</code>
+              </div>
+            </form>
+          </div>
+
+          <!-- ======================================================== -->
+          <!-- 5. STAFF PORTAL SIGN IN                                  -->
+          <!-- ======================================================== -->
+          <div *ngIf="mode() === 'staff'" class="view-content fade-in">
+            <button type="button" class="back-link-btn" (click)="switchToMode('options')">
+              &larr; Return to Attendee Sign In
+            </button>
+
+            <form (ngSubmit)="handleStaffLogin()" class="auth-form admin-form">
+              <div class="form-group">
+                <label class="form-label" for="staff-email">Staff Email</label>
+                <input
+                  id="staff-email"
+                  type="email"
+                  [(ngModel)]="staffEmail"
+                  name="staffEmail"
+                  placeholder="staff@spotbukk.com"
+                  class="form-control"
+                  autocomplete="username"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <div class="label-with-hint">
+                  <label class="form-label" for="staff-password">Staff Access Key / Password</label>
+                </div>
+                <div class="password-input-wrap">
+                  <input
+                    id="staff-password"
+                    [type]="showStaffPassword ? 'text' : 'password'"
+                    [(ngModel)]="staffPassword"
+                    name="staffPassword"
+                    placeholder="Enter staff password"
+                    class="form-control"
+                    autocomplete="current-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    class="toggle-pwd-btn"
+                    (click)="showStaffPassword = !showStaffPassword"
+                    [attr.aria-label]="showStaffPassword ? 'Hide password' : 'Show password'"
+                  >
+                    {{ showStaffPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="admin-notice-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span>Staff privileges grant door check-in & event operation clearance only. Administrative controls are restricted.</span>
+              </div>
+
+              <button
+                type="submit"
+                id="btn-staff-submit-main"
+                class="btn btn-primary btn-block submit-btn admin-submit"
+                [disabled]="isLoading() || !staffEmail.trim() || !staffPassword.trim()"
+              >
+                <span *ngIf="!isLoading()">Authenticate as Staff</span>
+                <span *ngIf="isLoading()" class="btn-spinner-text">
+                  <span class="btn-spinner"></span> Verifying Staff Credentials...
+                </span>
+              </button>
+
+              <div class="demo-creds-hint">
+                <span>Default test staff credentials:</span>
+                <code>staff&#64;spotbukk.com / SpotBukkStaff2026!</code>
               </div>
             </form>
           </div>
@@ -941,6 +1032,10 @@ export class LoginComponent implements OnInit, OnDestroy {
   adminPassword = '';
   showPassword = false;
 
+  staffEmail = 'staff@spotbukk.com';
+  staffPassword = '';
+  showStaffPassword = false;
+
   readonly isLoading = signal<boolean>(false);
   readonly isGoogleLoading = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
@@ -960,11 +1055,17 @@ export class LoginComponent implements OnInit, OnDestroy {
     // Check if mode was specified in query params
     if (qParams['mode'] === 'admin') {
       this.mode.set('admin');
+    } else if (qParams['mode'] === 'staff') {
+      this.mode.set('staff');
     }
 
     // If reason was unauthenticated
     if (qParams['reason'] === 'unauthenticated') {
-      this.errorMessage.set('Administrator authentication required to access this portal.');
+      if (qParams['mode'] === 'staff') {
+        this.errorMessage.set('Staff authentication required to access this portal.');
+      } else {
+        this.errorMessage.set('Administrator authentication required to access this portal.');
+      }
     }
   }
 
@@ -1123,13 +1224,41 @@ export class LoginComponent implements OnInit, OnDestroy {
       } else {
         this.router.navigate(['/admin']);
       }
+    } else if (role === 'STAFF') {
+      if (this.returnUrl && this.returnUrl.startsWith('/staff')) {
+        this.router.navigateByUrl(this.returnUrl);
+      } else {
+        this.router.navigate(['/staff']);
+      }
     } else {
       // END_USER: If they attempted to access /admin, redirect to /events instead of forbidden admin page
-      if (this.returnUrl && !this.returnUrl.startsWith('/admin') && !this.returnUrl.startsWith('/check-in') && this.returnUrl !== '/unauthorized') {
+      if (this.returnUrl && !this.returnUrl.startsWith('/admin') && !this.returnUrl.startsWith('/staff') && !this.returnUrl.startsWith('/check-in') && this.returnUrl !== '/unauthorized') {
         this.router.navigateByUrl(this.returnUrl);
       } else {
         this.router.navigate(['/events']);
       }
+    }
+  }
+
+  /**
+   * Option 5: Staff Login
+   */
+  async handleStaffLogin(): Promise<void> {
+    this.errorMessage.set(null);
+
+    if (!this.staffEmail.trim() || !this.staffPassword.trim()) {
+      this.errorMessage.set('Staff email and password are required.');
+      return;
+    }
+
+    this.isLoading.set(true);
+    try {
+      const user = await this.authService.loginAsStaff(this.staffEmail.trim(), this.staffPassword.trim());
+      this.handlePostLoginRedirect(user.role);
+    } catch (err: any) {
+      this.errorMessage.set(err.message || 'Invalid staff credentials. Access restricted.');
+    } finally {
+      this.isLoading.set(false);
     }
   }
 

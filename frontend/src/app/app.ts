@@ -15,15 +15,15 @@ import { NavigationLoggerService } from './core/services/navigation-logger.servi
   template: `
     <div class="app-root-container">
       <!-- Public Header (shown only on public views) -->
-      <app-header *ngIf="!isAdminRoute()"></app-header>
+      <app-header *ngIf="!isDedicatedPortalRoute()"></app-header>
 
       <!-- Main Router Viewport -->
-      <main [class.public-main]="!isAdminRoute()">
+      <main [class.public-main]="!isDedicatedPortalRoute()">
         <router-outlet></router-outlet>
       </main>
 
       <!-- Public Footer (shown only on public views) -->
-      <app-footer *ngIf="!isAdminRoute()"></app-footer>
+      <app-footer *ngIf="!isDedicatedPortalRoute()"></app-footer>
 
       <!-- Global Toast Notifications Viewport -->
       <app-toast></app-toast>
@@ -47,18 +47,28 @@ export class App {
   private readonly navigationLogger = inject(NavigationLoggerService); // Ensure centralized router logger active
 
   readonly isAdminRoute = signal<boolean>(false);
+  readonly isStaffRoute = signal<boolean>(false);
+
+  isDedicatedPortalRoute(): boolean {
+    return this.isAdminRoute() || this.isStaffRoute();
+  }
 
   constructor() {
-    this.isAdminRoute.set(this.router.url.startsWith('/admin'));
+    this.updateRouteState(this.router.url);
 
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        this.isAdminRoute.set(event.urlAfterRedirects.startsWith('/admin'));
+        this.updateRouteState(event.urlAfterRedirects);
         // Scroll to top on navigation unless fragment is present
         if (!event.urlAfterRedirects.includes('#')) {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
+  }
+
+  private updateRouteState(url: string): void {
+    this.isAdminRoute.set(url.startsWith('/admin'));
+    this.isStaffRoute.set(url.startsWith('/staff'));
   }
 }

@@ -23,7 +23,25 @@ export interface EventItem {
   title: string;
   edition: string;
   subtitle: string;
-  category: 'House Party' | 'Rooftop Sessions' | 'Intimate DJ' | 'Private Gathering' | 'Social Gathering' | 'Pop-up Experience';
+  category:
+    | 'House Party'
+    | 'Rooftop Sessions'
+    | 'Intimate DJ'
+    | 'Private Gathering'
+    | 'Social Gathering'
+    | 'Pop-up Experience'
+    | 'Pool Party'
+    | 'Trips'
+    | 'Farm House Party'
+    | "Riders' Collab Party"
+    | 'College Fest / Party'
+    | 'Supper Club'
+    | 'Workshops'
+    | 'Pub Crawling'
+    | 'Jamming & Karaoke Night'
+    | 'Street Food Hopping'
+    | 'Indoor Games'
+    | (string & {});
   date: string;
   isoDate: string;
   time: string;

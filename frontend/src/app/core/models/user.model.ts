@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'END_USER' | 'USER';
+export type UserRole = 'ADMIN' | 'STAFF' | 'CUSTOMER' | 'END_USER' | 'USER';
 
 export type AuthProvider = 'GOOGLE' | 'PHONE' | 'EMAIL' | 'ADMIN' | 'MOCK';
 

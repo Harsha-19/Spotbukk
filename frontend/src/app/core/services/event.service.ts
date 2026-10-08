@@ -5,6 +5,7 @@ import { EventItem, TicketTier } from '../models/event.model';
 import { Booking, CheckInScanResult, PaymentMethod, PaymentStatus } from '../models/booking.model';
 import { MOCK_EVENTS } from '../data/mock-events.data';
 import { MOCK_BOOKINGS } from '../data/mock-registrations.data';
+import { ALL_CATEGORY_EVENTS } from '../data/category-seed.data';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 
@@ -64,12 +65,19 @@ export class EventService {
     const storedEvents = localStorage.getItem(this.EVENTS_STORAGE);
     if (storedEvents) {
       try {
-        this.events.set(JSON.parse(storedEvents));
+        const parsed = JSON.parse(storedEvents) as EventItem[];
+        const merged = [...parsed];
+        for (const catEv of ALL_CATEGORY_EVENTS) {
+          if (!merged.some(e => e.id === catEv.id || e.slug === catEv.slug)) {
+            merged.push(catEv);
+          }
+        }
+        this.events.set(merged);
       } catch {
-        this.events.set(MOCK_EVENTS);
+        this.events.set([...MOCK_EVENTS, ...ALL_CATEGORY_EVENTS]);
       }
     } else {
-      this.events.set(MOCK_EVENTS);
+      this.events.set([...MOCK_EVENTS, ...ALL_CATEGORY_EVENTS]);
     }
 
     const storedBookings = localStorage.getItem(this.BOOKINGS_STORAGE);
@@ -95,7 +103,10 @@ export class EventService {
   // --- Event Queries & Actions ---
 
   getEventById(id: string): EventItem | undefined {
-    return this.events().find(e => e.id === id || e.slug === id);
+    return (
+      this.events().find(e => e.id === id || e.slug === id) ||
+      ALL_CATEGORY_EVENTS.find(e => e.id === id || e.slug === id)
+    );
   }
 
   createEvent(newEvent: Omit<EventItem, 'id' | 'slug' | 'ticketsSold'>): EventItem {

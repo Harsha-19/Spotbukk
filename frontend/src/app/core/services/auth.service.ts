@@ -24,9 +24,14 @@ export class AuthService {
 
   readonly isAuthenticated = computed(() => !!this.currentUser());
   readonly isAdmin = computed(() => this.currentUser()?.role === 'ADMIN');
+  readonly isStaff = computed(() => this.currentUser()?.role === 'STAFF');
+  readonly canAccessStaff = computed(() => {
+    const role = this.currentUser()?.role;
+    return role === 'STAFF' || role === 'ADMIN';
+  });
   readonly isEndUser = computed(() => {
     const role = this.currentUser()?.role;
-    return role === 'END_USER' || role === 'USER';
+    return role === 'END_USER' || role === 'USER' || role === 'CUSTOMER';
   });
   readonly isUser = computed(() => this.isEndUser());
 
@@ -232,6 +237,61 @@ export class AuthService {
   }
 
   /**
+   * Staff Authentication: Authenticates venue/door staff for operational access
+   */
+  async loginAsStaff(email: string, password: string, notify = true): Promise<User> {
+    this.isLoading.set(true);
+    try {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      // First attempt backend staff login if available
+      try {
+        const res = await firstValueFrom(
+          this.http.post<AuthResponse>(`${this.apiUrl}/api/auth/staff/login`, { email, password })
+        );
+        if (res && res.success && res.token && res.user) {
+          this.saveSession(res.token, res.user);
+          if (notify) {
+            this.toast.success('Staff Clearance Granted', `Authenticated as Staff: ${res.user.fullName || res.user.name}`);
+          }
+          return res.user;
+        }
+      } catch {
+        // Fallback to local demo staff credentials if backend endpoint is unavailable
+      }
+
+      // Demo Staff Authentication (Seed Staff Account)
+      const isStaffUser = cleanEmail === 'staff@spotbukk.com' || cleanEmail.includes('staff');
+      const isCorrectPassword = password === 'SpotBukkStaff2026!' || password === 'staff123' || password === 'SpotBukkAdmin2026!';
+
+      if (isStaffUser && isCorrectPassword) {
+        const staffUser: User = {
+          id: 'usr_staff_01',
+          email: 'staff@spotbukk.com',
+          name: 'Arjun Menon',
+          fullName: 'Arjun Menon',
+          role: 'STAFF',
+          authenticationProvider: 'STAFF' as any,
+          createdAt: new Date().toISOString()
+        };
+        const mockStaffToken = 'spotbukk_staff_demo_token_' + Date.now();
+        this.saveSession(mockStaffToken, staffUser);
+        if (notify) {
+          this.toast.success('Staff Clearance Granted', 'Welcome back, Arjun');
+        }
+        return staffUser;
+      }
+
+      throw new Error('Invalid staff credentials. Please check your email and password.');
+    } catch (err: any) {
+      const msg = err.error?.error || err.message || 'Staff authentication rejected';
+      this.toast.error('401 Unauthorized', msg);
+      throw new Error(msg);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  /**
    * Secure Sign Out: Clears tokens, local state, and invalidates session
    */
   logout(notify = true): void {
@@ -256,8 +316,8 @@ export class AuthService {
       this.toast.info('Signed Out', 'Your session has been terminated securely.');
     }
 
-    // If logging out from an admin view, redirect immediately to login
-    if (wasAdmin || this.router.url.startsWith('/admin') || this.router.url.startsWith('/check-in')) {
+    // If logging out from an admin or staff view, redirect immediately to login
+    if (wasAdmin || this.router.url.startsWith('/admin') || this.router.url.startsWith('/staff') || this.router.url.startsWith('/check-in')) {
       this.router.navigate(['/login']);
     } else {
       this.router.navigate(['/']);

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './public/home/home.component';
 import { EventsComponent } from './public/events/events.component';
+import { CategoryEventsComponent } from './public/category-events/category-events.component';
 import { EventDetailComponent } from './public/event-detail/event-detail.component';
 import { RegistrationComponent } from './public/registration/registration.component';
 import { CheckoutComponent } from './public/checkout/checkout.component';
@@ -20,11 +21,35 @@ import { AdminAnalyticsComponent } from './admin/analytics/admin-analytics.compo
 import { AdminQrScannerComponent } from './admin/qr-scanner/admin-qr-scanner.component';
 import { DevLogsComponent } from './dev/logs/dev-logs.component';
 import { adminAuthGuard } from './core/guards/admin-auth.guard';
+import { staffAuthGuard } from './core/guards/staff-auth.guard';
+import { StaffLayoutComponent } from './staff/layout/staff-layout.component';
+import { StaffDashboardComponent } from './staff/dashboard/staff-dashboard.component';
+import { StaffCheckInComponent } from './staff/check-in/staff-check-in.component';
+import { StaffActivityComponent } from './staff/activity/staff-activity.component';
+import { StaffEventsComponent } from './staff/events/staff-events.component';
+import { StaffLoginComponent } from './staff/login/staff-login.component';
 
 export const routes: Routes = [
+  // Staff Login Route
+  { path: 'staff/login', component: StaffLoginComponent, title: 'Staff Sign In — SpotBukk' },
+
+  // Staff Portal Routes (Protected: STAFF or ADMIN)
+  {
+    path: 'staff',
+    component: StaffLayoutComponent,
+    canActivate: [staffAuthGuard],
+    canActivateChild: [staffAuthGuard],
+    children: [
+      { path: '', component: StaffDashboardComponent, title: 'Staff Portal — SpotBukk' },
+      { path: 'check-in', component: StaffCheckInComponent, title: 'Door Clearance & Check-In — SpotBukk Staff' },
+      { path: 'activity', component: StaffActivityComponent, title: 'Check-In Activity — SpotBukk Staff' },
+      { path: 'events', component: StaffEventsComponent, title: 'Assigned Events — SpotBukk Staff' }
+    ]
+  },
   // Public Routes (Accessible to everyone)
   { path: '', component: HomeComponent, title: 'SpotBukk — Nights Worth Remembering' },
   { path: 'events', component: EventsComponent, title: 'Discover Gatherings — SpotBukk' },
+  { path: 'events/category/:slug', component: CategoryEventsComponent, title: 'Category Experiences — SpotBukk' },
   { path: 'events/:id', component: EventDetailComponent, title: 'Gathering Experience — SpotBukk' },
   { path: 'events/:id/register', component: RegistrationComponent, title: 'Reserve Passes — SpotBukk' },
   { path: 'checkout', component: CheckoutComponent, title: 'Secure Checkout — SpotBukk' },

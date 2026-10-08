@@ -3,11 +3,19 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { EventService } from '../../core/services/event.service';
 import { EventCardComponent } from '../../shared/components/event-card/event-card.component';
+import { FeaturedSliderComponent } from './featured-slider/featured-slider.component';
+import { ExploreExperiencesComponent } from './explore-experiences/explore-experiences.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, EventCardComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    EventCardComponent,
+    FeaturedSliderComponent,
+    ExploreExperiencesComponent
+  ],
   template: `
     <div class="home-page">
       <!-- 1. HERO SECTION -->
@@ -134,6 +142,12 @@ import { EventCardComponent } from '../../shared/components/event-card/event-car
           </div>
         </div>
       </section>
+ 
+      <!-- NEW: TOP 5 EXPERIENCES SLIDER -->
+      <app-featured-slider></app-featured-slider>
+
+      <!-- NEW: EXPLORE EXPERIENCES (12 CATEGORIES) -->
+      <app-explore-experiences></app-explore-experiences>
 
       <!-- 3. UPCOMING EVENTS GRID -->
       <section class="section events-section">

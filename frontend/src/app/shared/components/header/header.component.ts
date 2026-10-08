@@ -27,6 +27,9 @@ import { AuthService } from '../../../core/services/auth.service';
           <a *ngIf="authService.isAdmin()" routerLink="/admin" routerLinkActive="active" class="nav-link admin-pill">
             Admin Portal
           </a>
+          <a *ngIf="authService.isStaff()" routerLink="/staff" routerLinkActive="active" class="nav-link admin-pill">
+            Staff Portal
+          </a>
         </nav>
 
         <!-- Right Actions -->
@@ -82,6 +85,7 @@ import { AuthService } from '../../../core/services/auth.service';
           <a routerLink="/events" (click)="closeMobileMenu()" class="mobile-link">Discover Events</a>
           <a *ngIf="authService.isAdmin()" routerLink="/admin/scanner" (click)="closeMobileMenu()" class="mobile-link">Door Scanner</a>
           <a *ngIf="authService.isAdmin()" routerLink="/admin" (click)="closeMobileMenu()" class="mobile-link admin-highlight">Admin Dashboard</a>
+          <a *ngIf="authService.isStaff()" routerLink="/staff" (click)="closeMobileMenu()" class="mobile-link admin-highlight">Staff Portal</a>
           
           <a *ngIf="!authService.isAuthenticated()" routerLink="/login" (click)="closeMobileMenu()" class="mobile-link signin-highlight">
             Sign In
