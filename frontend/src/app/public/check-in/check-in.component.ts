@@ -25,7 +25,7 @@ import { ToastService } from '../../core/services/toast.service';
         <div class="checkin-quick-stats">
           <div class="stat-pill">
             <span class="stat-lbl">Active Enclave</span>
-            <span class="stat-val">AFTER DARK — VOL. 04</span>
+            <span class="stat-val">{{ activeEnclaveName }}</span>
           </div>
           <div class="stat-pill">
             <span class="stat-lbl">Checked In</span>
@@ -675,6 +675,11 @@ export class CheckInComponent implements OnInit {
   torchActive = false;
 
   latestResult: CheckInScanResult | null = null;
+
+  get activeEnclaveName(): string {
+    const ev = this.eventService.events()[0];
+    return ev ? `${ev.title} — ${ev.edition}` : 'HOUSE OF SUNDOWN — GOLDEN HOUR SPECIAL';
+  }
 
   get checkedInBookings() {
     return this.eventService.bookings().filter(b => b.checkedIn);

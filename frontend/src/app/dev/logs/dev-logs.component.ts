@@ -80,8 +80,8 @@ import { NavigationLoggerService, NavigationLogRecord } from '../../core/service
           <div class="tester-links">
             <button (click)="navigateTo('/')" class="test-pill">/ (Home)</button>
             <button (click)="navigateTo('/events')" class="test-pill">/events</button>
-            <button (click)="navigateTo('/events/after-dark-vol-04')" class="test-pill">/events/after-dark-vol-04</button>
-            <button (click)="navigateTo('/events/after-dark-vol-04/register')" class="test-pill">/events/.../register</button>
+            <button (click)="navigateTo('/events/house-of-sundown')" class="test-pill">/events/house-of-sundown</button>
+            <button (click)="navigateTo('/events/house-of-sundown/register')" class="test-pill">/events/.../register</button>
             <button (click)="navigateTo('/checkout')" class="test-pill">/checkout</button>
             <button (click)="navigateTo('/payment-success')" class="test-pill">/payment-success</button>
             <button (click)="navigateTo('/check-in')" class="test-pill">/check-in</button>

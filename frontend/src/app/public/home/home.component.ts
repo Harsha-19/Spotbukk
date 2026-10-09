@@ -32,10 +32,6 @@ import { ExploreExperiencesComponent } from './explore-experiences/explore-exper
         <div class="container hero-content">
           <div class="hero-kicker-row">
             <span class="editorial-kicker">CURATED NIGHTLIFE & PRIVATE SESSIONS</span>
-            <span class="live-pill">
-              <span class="pulse-indicator"></span>
-              Autumn/Winter 2026 Season Active
-            </span>
           </div>
 
           <h1 class="hero-headline">
@@ -84,64 +80,6 @@ import { ExploreExperiencesComponent } from './explore-experiences/explore-exper
         </div>
       </section>
 
-      <!-- 2. FEATURED EVENT BANNER (Editorial Master Showcase) -->
-      <section class="section featured-section" *ngIf="featuredEvent as feat">
-        <div class="container">
-          <div class="section-header">
-            <div>
-              <span class="editorial-kicker">Spotlight Gathering</span>
-              <h2 class="section-title">The Signature Edition</h2>
-            </div>
-            <a [routerLink]="['/events', feat.id]" class="view-link">
-              View Event Story &rarr;
-            </a>
-          </div>
-
-          <div class="featured-editorial-card card-base">
-            <div class="featured-image-col">
-              <img [src]="feat.heroImage" [alt]="feat.title" class="featured-img" />
-              <div class="featured-badge-pill">
-                <span class="status-pill status-selling-fast">Selling Fast</span>
-              </div>
-            </div>
-
-            <div class="featured-info-col">
-              <div class="feat-top-meta">
-                <span class="feat-category">{{ feat.category }}</span>
-                <span class="feat-date">{{ feat.date }}</span>
-              </div>
-
-              <h2 class="feat-title">
-                {{ feat.title }}
-                <span class="feat-edition">{{ feat.edition }}</span>
-              </h2>
-
-              <p class="feat-desc">
-                {{ feat.description }}
-              </p>
-
-              <div class="feat-highlights-grid">
-                <div class="highlight-item" *ngFor="let h of feat.highlights.slice(0, 3)">
-                  <span class="highlight-check">✓</span>
-                  <span>{{ h }}</span>
-                </div>
-              </div>
-
-              <div class="feat-action-row">
-                <div class="feat-price">
-                  <span class="label">Tickets From</span>
-                  <span class="val">₹{{ feat.startingPrice }}</span>
-                </div>
-                <div class="feat-btns">
-                  <a [routerLink]="['/events', feat.id]" class="btn btn-primary">
-                    View Event & Reserve
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
  
       <!-- NEW: TOP 5 EXPERIENCES SLIDER -->
       <app-featured-slider></app-featured-slider>
@@ -311,28 +249,6 @@ import { ExploreExperiencesComponent } from './explore-experiences/explore-exper
       flex-wrap: wrap;
     }
 
-    .live-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 4px 12px;
-      border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #f5f2eb;
-    }
-
-    .pulse-indicator {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #4ade80;
-      box-shadow: 0 0 8px #4ade80;
-    }
-
     .hero-headline {
       font-size: clamp(2.5rem, 6.5vw, 4.8rem);
       font-weight: 800;
@@ -445,133 +361,6 @@ import { ExploreExperiencesComponent } from './explore-experiences/explore-exper
       }
     }
 
-    /* Featured Editorial Card */
-    .featured-editorial-card {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      overflow: hidden;
-      border-radius: var(--radius-lg);
-
-      @media (max-width: 900px) {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .featured-image-col {
-      position: relative;
-      min-height: 420px;
-
-      @media (max-width: 900px) {
-        min-height: 280px;
-      }
-    }
-
-    .featured-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .featured-badge-pill {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-    }
-
-    .featured-info-col {
-      padding: 48px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-
-      @media (max-width: 768px) {
-        padding: 24px;
-      }
-    }
-
-    .feat-top-meta {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-
-      .feat-category {
-        color: var(--accent);
-        font-weight: 700;
-      }
-    }
-
-    .feat-title {
-      font-size: clamp(2rem, 3.5vw, 2.8rem);
-      margin-bottom: 16px;
-      line-height: 1.1;
-
-      .feat-edition {
-        display: block;
-        font-size: 1rem;
-        letter-spacing: 0.12em;
-        color: var(--text-secondary);
-        margin-top: 4px;
-      }
-    }
-
-    .feat-desc {
-      font-size: 0.95rem;
-      color: var(--text-secondary);
-      line-height: 1.6;
-      margin-bottom: 24px;
-    }
-
-    .feat-highlights-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 32px;
-    }
-
-    .highlight-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.85rem;
-      color: var(--text-primary);
-    }
-
-    .highlight-check {
-      color: var(--accent);
-      font-weight: bold;
-    }
-
-    .feat-action-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-top: 1px solid var(--border-subtle);
-      padding-top: 24px;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .feat-price {
-      display: flex;
-      flex-direction: column;
-
-      .label {
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        color: var(--text-muted);
-      }
-
-      .val {
-        font-family: var(--font-display);
-        font-size: 1.4rem;
-        font-weight: 800;
-      }
-    }
 
     /* Events Grid */
     .events-grid {
@@ -729,8 +518,9 @@ import { ExploreExperiencesComponent } from './explore-experiences/explore-exper
 export class HomeComponent {
   private readonly eventService = inject(EventService);
 
-  readonly featuredEvent = this.eventService.events().find(e => e.featured) || this.eventService.events()[0];
-  readonly upcomingEvents = this.eventService.events().slice(1, 7);
+  get upcomingEvents() {
+    return this.eventService.events().slice(0, 6);
+  }
 
   activeFaq = 0;
 

@@ -17,8 +17,8 @@ import { AuthService } from '../../../core/services/auth.service';
 
         <!-- Desktop Navigation -->
         <nav class="desktop-nav">
-          <a routerLink="/events" routerLinkActive="active" class="nav-link">Events</a>
           <a routerLink="/" fragment="experience" class="nav-link">Experience</a>
+          <a routerLink="/events" routerLinkActive="active" class="nav-link">Events</a>
           <a routerLink="/" fragment="faq" class="nav-link">FAQ</a>
           <a *ngIf="authService.isAdmin()" routerLink="/admin/scanner" routerLinkActive="active" class="nav-link">
             <span class="pulse-dot"></span>
@@ -42,7 +42,6 @@ import { AuthService } from '../../../core/services/auth.service';
           <!-- Authenticated User Profile Pill & Sign Out -->
           <div *ngIf="authService.isAuthenticated()" class="user-profile-menu">
             <span class="user-tag" [class.admin]="authService.isAdmin()">
-              <span class="role-icon">{{ authService.isAdmin() ? '🛡️' : '👤' }}</span>
               <span class="user-name">{{ authService.currentUser()?.name || authService.currentUser()?.fullName }}</span>
               <span class="user-role-badge">{{ authService.currentUser()?.role }}</span>
             </span>
@@ -82,7 +81,9 @@ import { AuthService } from '../../../core/services/auth.service';
         </div>
         <div class="mobile-nav-links">
           <a routerLink="/" (click)="closeMobileMenu()" class="mobile-link">Home</a>
-          <a routerLink="/events" (click)="closeMobileMenu()" class="mobile-link">Discover Events</a>
+          <a routerLink="/" fragment="experience" (click)="closeMobileMenu()" class="mobile-link">Experience</a>
+          <a routerLink="/events" (click)="closeMobileMenu()" class="mobile-link">Events</a>
+          <a routerLink="/" fragment="faq" (click)="closeMobileMenu()" class="mobile-link">FAQ</a>
           <a *ngIf="authService.isAdmin()" routerLink="/admin/scanner" (click)="closeMobileMenu()" class="mobile-link">Door Scanner</a>
           <a *ngIf="authService.isAdmin()" routerLink="/admin" (click)="closeMobileMenu()" class="mobile-link admin-highlight">Admin Dashboard</a>
           <a *ngIf="authService.isStaff()" routerLink="/staff" (click)="closeMobileMenu()" class="mobile-link admin-highlight">Staff Portal</a>
@@ -270,9 +271,6 @@ import { AuthService } from '../../../core/services/auth.service';
         color: #ffb3c1;
       }
 
-      .role-icon {
-        font-size: 0.85rem;
-      }
 
       .user-name {
         max-width: 100px;

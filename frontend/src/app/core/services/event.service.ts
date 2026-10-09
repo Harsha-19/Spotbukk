@@ -65,7 +65,9 @@ export class EventService {
     const storedEvents = localStorage.getItem(this.EVENTS_STORAGE);
     if (storedEvents) {
       try {
-        const parsed = JSON.parse(storedEvents) as EventItem[];
+        const parsed = (JSON.parse(storedEvents) as EventItem[]).filter(
+          e => e.id !== 'after-dark-04' && e.slug !== 'after-dark-vol-04'
+        );
         const merged = [...parsed];
         for (const catEv of ALL_CATEGORY_EVENTS) {
           if (!merged.some(e => e.id === catEv.id || e.slug === catEv.slug)) {
@@ -83,7 +85,10 @@ export class EventService {
     const storedBookings = localStorage.getItem(this.BOOKINGS_STORAGE);
     if (storedBookings) {
       try {
-        this.bookings.set(JSON.parse(storedBookings));
+        const parsedBookings = (JSON.parse(storedBookings) as Booking[]).filter(
+          b => b.eventId !== 'after-dark-04'
+        );
+        this.bookings.set(parsedBookings);
       } catch {
         this.bookings.set(MOCK_BOOKINGS);
       }

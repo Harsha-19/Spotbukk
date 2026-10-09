@@ -223,7 +223,7 @@ type ValidationViewMode = 'idle' | 'result' | 'success';
                 (click)="applyDemoCode('TKT-44021-USED')"
                 title="Rohit Nair (Used)"
               >
-                ⚠ TKT-44021-USED <span class="chip-hint">(Used)</span>
+                ! TKT-44021-USED <span class="chip-hint">(Used)</span>
               </button>
               <button
                 type="button"
@@ -327,7 +327,7 @@ type ValidationViewMode = 'idle' | 'result' | 'success';
             class="result-card used-card card-base fade-in"
           >
             <div class="result-header used-header">
-              <span class="status-symbol">⚠</span>
+              <span class="status-symbol">!</span>
               <h2 class="status-heading">ALREADY USED</h2>
             </div>
 
