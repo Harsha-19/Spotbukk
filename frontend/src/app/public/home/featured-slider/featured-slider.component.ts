@@ -21,7 +21,7 @@ import { CategoryService } from '../../../core/services/category.service';
           </div>
         </div>
 
-        <!-- Tight Poster Showcase Stage: < Previous | [ POSTER CARD ] | Next > -->
+        <!-- Wide Cinematic Landscape Showcase Stage (16:9 / 2:1 Wide Banner) -->
         <div
           class="slider-showcase-stage"
           (touchstart)="onTouchStart($event)"
@@ -34,7 +34,7 @@ import { CategoryService } from '../../../core/services/category.service';
           role="region"
           aria-roledescription="carousel"
         >
-          <!-- Left Arrow Button -->
+          <!-- Left Floating Glass Nav Button -->
           <button
             type="button"
             class="flank-nav-btn prev-btn"
@@ -46,7 +46,7 @@ import { CategoryService } from '../../../core/services/category.service';
             </svg>
           </button>
 
-          <!-- Tight Poster Card Viewport -->
+          <!-- Wide Cinematic Viewport -->
           <div class="poster-card-viewport">
             <div
               class="poster-track"
@@ -62,8 +62,9 @@ import { CategoryService } from '../../../core/services/category.service';
                   class="tight-poster-card"
                   [attr.aria-label]="cat.name + ' - ' + cat.tagline"
                 >
+                  <!-- Wide 16:9 Banner Image (Naturally filled background) -->
                   <img
-                    [src]="cat.bannerImage"
+                    [src]="getWideBanner(cat)"
                     [alt]="cat.name"
                     class="poster-img"
                     loading="lazy"
@@ -80,7 +81,7 @@ import { CategoryService } from '../../../core/services/category.service';
             </div>
           </div>
 
-          <!-- Right Arrow Button -->
+          <!-- Right Floating Glass Nav Button -->
           <button
             type="button"
             class="flank-nav-btn next-btn"
@@ -158,84 +159,103 @@ import { CategoryService } from '../../../core/services/category.service';
       letter-spacing: 0.08em;
     }
 
-    /* Tight Showcase Stage: < Previous | [ POSTER ] | Next > */
+    /* Wide Cinematic Showcase Stage */
     .slider-showcase-stage {
+      position: relative;
+      width: 100%;
+      max-width: 1060px;
+      margin: 0 auto;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 24px;
-      margin: 0 auto;
       outline: none;
-
-      @media (max-width: 640px) {
-        gap: 10px;
-      }
     }
 
+    /* Floating Glass Nav Buttons positioned over the ambient wings */
     .flank-nav-btn {
-      width: 48px;
-      height: 48px;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
-      background: var(--bg-surface-elevated);
-      border: 1px solid var(--border-medium);
-      color: var(--text-primary);
+      background: rgba(14, 15, 22, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       flex-shrink: 0;
       transition: all var(--transition-fast);
-      box-shadow: var(--shadow-subtle);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
 
       &:hover {
         background: var(--accent);
-        color: #ffffff;
         border-color: var(--accent);
-        transform: scale(1.08);
+        transform: translateY(-50%) scale(1.1);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 20px var(--accent-glow);
       }
 
       &:active {
-        transform: scale(0.96);
+        transform: translateY(-50%) scale(0.95);
       }
 
-      @media (max-width: 640px) {
-        width: 38px;
-        height: 38px;
+      &.prev-btn {
+        left: 20px;
+      }
+
+      &.next-btn {
+        right: 20px;
+      }
+
+      @media (max-width: 768px) {
+        width: 40px;
+        height: 40px;
+        &.prev-btn { left: 10px; }
+        &.next-btn { right: 10px; }
       }
     }
 
-    /* Viewport wraps tightly around the poster */
+    /* Wide Cinematic Viewport (16:9 Landscape Banner) */
     .poster-card-viewport {
       position: relative;
-      /* Balanced size: fits desktop screens without vertical scroll or empty space */
-      width: 460px;
-      max-width: calc(100vw - 120px);
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      min-height: 360px;
+      max-height: 490px;
       overflow: hidden;
-      border-radius: var(--radius-lg);
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-      border: 1px solid var(--border-medium);
-      background: #000000;
+      border-radius: 20px;
+      box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #06070a;
 
-      @media (max-width: 768px) {
-        width: 380px;
+      @media (max-width: 900px) {
+        min-height: 300px;
       }
 
-      @media (max-width: 480px) {
-        width: 300px;
-        max-width: calc(100vw - 90px);
+      @media (max-width: 640px) {
+        aspect-ratio: 16 / 10;
+        min-height: 250px;
+        border-radius: 14px;
       }
     }
 
     .poster-track {
       display: flex;
       width: 100%;
-      transition: transform 420ms cubic-bezier(0.25, 1, 0.5, 1);
+      height: 100%;
+      transition: transform 440ms cubic-bezier(0.25, 1, 0.5, 1);
       will-change: transform;
     }
 
     .poster-slide {
       flex: 0 0 100%;
       width: 100%;
+      height: 100%;
       min-width: 100%;
       display: flex;
       align-items: center;
@@ -246,32 +266,36 @@ import { CategoryService } from '../../../core/services/category.service';
       position: relative;
       display: block;
       width: 100%;
+      height: 100%;
       text-decoration: none;
       color: inherit;
       cursor: pointer;
       overflow: hidden;
+      background: #050608;
     }
 
+    /* Natural 16:9 banner image completely fills the banner cleanly */
     .poster-img {
       width: 100%;
-      height: auto;
+      height: 100%;
       display: block;
-      /* Natural rendering: no stretching, no cutoffs */
-      object-fit: contain;
+      object-fit: cover;
+      object-position: center;
       transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
 
       .tight-poster-card:hover & {
-        transform: scale(1.025);
+        transform: scale(1.03);
       }
     }
 
     .card-hover-scrim {
       position: absolute;
       inset: 0;
+      z-index: 5;
       background: linear-gradient(
         180deg,
         rgba(0, 0, 0, 0) 60%,
-        rgba(0, 0, 0, 0.75) 100%
+        rgba(6, 7, 10, 0.78) 100%
       );
       display: flex;
       align-items: flex-end;
@@ -289,13 +313,13 @@ import { CategoryService } from '../../../core/services/category.service';
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 20px;
+      padding: 10px 22px;
       background: var(--accent);
       color: #ffffff;
       font-weight: 700;
       font-size: 0.88rem;
       border-radius: var(--radius-full);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
       transform: translateY(6px);
       transition: transform var(--transition-fast);
 
@@ -405,6 +429,24 @@ export class FeaturedSliderComponent implements OnInit, OnDestroy {
   readonly featuredCategories = this.categoryService.featuredCategories();
   activeIndex = 0;
 
+  getWideBanner(cat: any): string {
+    if (!cat) return '';
+    if (cat.wideBannerImage) return cat.wideBannerImage;
+    const wideMap: Record<string, string> = {
+      'pool-party': '/banners/wide-pool-party.jpg',
+      'trips': '/banners/wide-trips.jpg',
+      'house-party': '/banners/wide-house-party.jpg',
+      'college-fest': '/banners/wide-college-fest.jpg',
+      'farm-house-party': '/banners/wide-farm-house-party.jpg',
+      'riders-collab-party': '/banners/wide-riders-collab-party.jpg',
+      'supper-club': '/banners/wide-supper-club.jpg',
+      'workshops': '/banners/wide-workshops.jpg',
+      'pub-crawling': '/banners/wide-pub-crawling.jpg',
+      'jamming-karaoke': '/banners/wide-jamming-karaoke.jpg'
+    };
+    return wideMap[cat.slug] || cat.bannerImage || '';
+  }
+
   private touchStartX = 0;
   private touchEndX = 0;
   private autoPlayTimer: any = null;
@@ -465,7 +507,7 @@ export class FeaturedSliderComponent implements OnInit, OnDestroy {
     this.stopAutoPlay();
     this.autoPlayTimer = setInterval(() => {
       this.nextSlide();
-    }, 6000);
+    }, 3000); // Automatically slides every 3 seconds
   }
 
   private stopAutoPlay(): void {
