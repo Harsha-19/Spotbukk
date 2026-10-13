@@ -6,12 +6,17 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const { MOCK_BOOKINGS } = require('./mock-registrations');
+const { requireEnv } = require('./config/env');
+const { verifyGoogleIdToken } = require('./auth/google-token-verifier');
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'spotbukk_secure_jwt_secret_key_2026';
+const PORT = Number(process.env.PORT || 3000);
+const JWT_SECRET = requireEnv('JWT_SECRET', { minLength: 32 });
+const ADMIN_PASSWORD = requireEnv('ADMIN_PASSWORD', { minLength: 16 });
+const STAFF_EMAIL = requireEnv('STAFF_EMAIL');
+const STAFF_PASSWORD = requireEnv('STAFF_PASSWORD', { minLength: 16 });
 
 // In-memory registration registry initialized with mock bookings
 let activeBookings = JSON.parse(JSON.stringify(MOCK_BOOKINGS));
@@ -52,8 +57,6 @@ function getCredentials() {
 // ===================================================================
 // IN-MEMORY USER REGISTRY & OTP STORE (SERVER TRUTH)
 // ===================================================================
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'SpotBukkAdmin2026!';
 
 // Trusted Admin accounts defined on the server
 const TRUSTED_ADMINS = [
@@ -108,7 +111,7 @@ function authenticateToken(req, res, next) {
     });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, JWT_SECRET, { issuer: 'spotbukk-api', audience: 'spotbukk-client' }, (err, decoded) => {
     if (err) {
       return res.status(401).json({
         success: false,
@@ -136,78 +139,37 @@ function requireAdmin(req, res, next) {
 // ===================================================================
 
 // 1. Google OAuth / One-Tap Authentication (END_USER ONLY)
-app.post('/api/auth/google', (req, res) => {
+// Only a Google-verified ID token is accepted. Client-supplied profile fields are untrusted.
+app.post('/api/auth/google', async (req, res) => {
   try {
-    const { email, name, picture, credential } = req.body;
-    let userEmail = email;
-    let userName = name;
-
-    // Decode JWT credential payload if provided
-    if (credential && typeof credential === 'string') {
-      try {
-        const parts = credential.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-          if (payload.email) userEmail = payload.email;
-          if (payload.name) userName = payload.name;
-        }
-      } catch (e) {
-        // Fallback to body fields
-      }
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return res.status(503).json({ success: false, error: 'Google sign-in is not configured on this server' });
     }
-
-    if (!userEmail) {
-      return res.status(400).json({
-        success: false,
-        error: 'Valid Google account email is required'
-      });
-    }
-
-    const cleanEmail = normalizeEmail(userEmail);
+    const claims = await verifyGoogleIdToken(req.body && req.body.credential, clientId);
+    const cleanEmail = normalizeEmail(claims.email);
+    const userName = typeof claims.name === 'string' && claims.name.trim()
+      ? claims.name.trim() : cleanEmail.split('@')[0];
+    const picture = typeof claims.picture === 'string' ? claims.picture : '';
     let user = registeredUsers.get(cleanEmail);
-
     if (!user) {
       user = {
-        id: `usr_g_${crypto.randomBytes(4).toString('hex')}`,
-        email: cleanEmail,
-        name: userName || cleanEmail.split('@')[0],
-        fullName: userName || cleanEmail.split('@')[0],
-        avatarUrl: picture || '',
-        authenticationProvider: 'GOOGLE',
-        role: 'END_USER', // Strictly enforced server-side
-        createdAt: new Date().toISOString()
+        id: `usr_g_${crypto.randomBytes(8).toString('hex')}`,
+        email: cleanEmail, name: userName, fullName: userName, avatarUrl: picture,
+        authenticationProvider: 'GOOGLE', role: 'END_USER', createdAt: new Date().toISOString()
       };
       registeredUsers.set(cleanEmail, user);
     }
-
-    // Always enforce END_USER role for Google social logins
     user.role = 'END_USER';
     user.authenticationProvider = 'GOOGLE';
-
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        fullName: user.fullName,
-        role: 'END_USER',
-        authenticationProvider: 'GOOGLE'
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    return res.status(200).json({
-      success: true,
-      token,
-      user
-    });
+    const safeUser = { ...user, role: 'END_USER', authenticationProvider: 'GOOGLE' };
+    const token = jwt.sign({
+      id: safeUser.id, email: safeUser.email, name: safeUser.name, fullName: safeUser.fullName,
+      role: 'END_USER', authenticationProvider: 'GOOGLE'
+    }, JWT_SECRET, { expiresIn: '24h', issuer: 'spotbukk-api', audience: 'spotbukk-client' });
+    return res.status(200).json({ success: true, token, user: safeUser });
   } catch (error) {
-    console.error('Google auth error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Google authentication service encountered an error'
-    });
+    return res.status(401).json({ success: false, error: 'Google identity could not be verified' });
   }
 });
 
@@ -343,7 +305,7 @@ app.post('/api/auth/phone/verify-otp', (req, res) => {
         authenticationProvider: 'PHONE'
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '24h', issuer: 'spotbukk-api', audience: 'spotbukk-client' }
     );
 
     return res.status(200).json({
@@ -493,7 +455,7 @@ app.post('/api/auth/email/verify-otp', (req, res) => {
         authenticationProvider: 'EMAIL'
       },
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '24h', issuer: 'spotbukk-api', audience: 'spotbukk-client' }
     );
 
     return res.status(200).json({
@@ -510,152 +472,53 @@ app.post('/api/auth/email/verify-otp', (req, res) => {
   }
 });
 
-// 4. Secure Admin Authentication (ADMIN ROLE ASSIGNED ONLY BY SERVER)
+// 4. Administrator authentication. No hardcoded fallback credentials.
 app.post('/api/auth/admin/login', (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
     const cleanEmail = normalizeEmail(email);
-
-    if (!cleanEmail || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Administrator email and security password are required'
-      });
-    }
-
-    // Verify against trusted server-side admin registry
     const adminRecord = TRUSTED_ADMINS.find(a => normalizeEmail(a.email) === cleanEmail);
-
-    // Check credentials (allows configured ADMIN_PASSWORD or fallback 'admin123')
-    const isValidPassword = password === ADMIN_PASSWORD || password === 'admin123' || password === 'SpotBukkAdmin2026!';
-
-    if (!adminRecord || !isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid administrator credentials. Access strictly denied.'
-      });
+    if (!adminRecord || typeof password !== 'string' || password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ success: false, error: 'Invalid administrator credentials' });
     }
-
-    // Issue trusted Admin token
     const adminUser = {
-      id: adminRecord.id,
-      email: adminRecord.email,
-      name: adminRecord.name,
-      fullName: adminRecord.fullName,
-      role: 'ADMIN', // Trusted server-side source
-      authenticationProvider: 'ADMIN'
+      id: adminRecord.id, email: adminRecord.email, name: adminRecord.name,
+      fullName: adminRecord.fullName, role: 'ADMIN', authenticationProvider: 'ADMIN'
     };
-
-    const token = jwt.sign(adminUser, JWT_SECRET, { expiresIn: '12h' });
-
-    console.log(`\x1b[32m[AUTH ADMIN LOGIN]\x1b[0m Admin authenticated: ${adminRecord.email}`);
-
-    return res.status(200).json({
-      success: true,
-      token,
-      user: adminUser
+    const token = jwt.sign(adminUser, JWT_SECRET, {
+      expiresIn: '12h', issuer: 'spotbukk-api', audience: 'spotbukk-client'
     });
+    return res.status(200).json({ success: true, token, user: adminUser });
   } catch (error) {
-    console.error('Admin login error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Administrator authentication failure'
-    });
+    console.error('Admin login error:', error.message);
+    return res.status(500).json({ success: false, error: 'Administrator authentication failure' });
   }
 });
 
-// 4b. Staff Authentication Endpoint
+// 4b. Staff authentication. Credentials are explicitly configured on the server.
 app.post('/api/auth/staff/login', (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const cleanEmail = normalizeEmail(email);
-
-    if (!cleanEmail || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Staff email and password are required'
-      });
-    }
-
-    const isStaffUser = cleanEmail === 'staff@spotbukk.com' || cleanEmail.includes('staff') || cleanEmail === 'admin@spotbukk.com';
-    const isValidPassword = password === 'SpotBukkStaff2026!' || password === 'staff123' || password === 'admin123' || password === 'SpotBukkAdmin2026!';
-
-    if (!isStaffUser || !isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid staff credentials. Access restricted.'
-      });
-    }
-
-    const staffUser = {
-      id: 'usr_staff_01',
-      email: cleanEmail,
-      name: 'Arjun Menon',
-      fullName: 'Arjun Menon (Staff)',
-      role: 'STAFF',
-      authenticationProvider: 'STAFF'
-    };
-
-    const token = jwt.sign(staffUser, JWT_SECRET, { expiresIn: '12h' });
-
-    console.log(`\x1b[32m[AUTH STAFF LOGIN]\x1b[0m Staff authenticated: ${cleanEmail}`);
-
-    return res.status(200).json({
-      success: true,
-      token,
-      user: staffUser
-    });
-  } catch (error) {
-    console.error('Staff login error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Staff authentication failure'
-    });
+  const { email, password } = req.body || {};
+  const cleanEmail = normalizeEmail(email);
+  if (!cleanEmail || typeof password !== 'string' ||
+      cleanEmail !== normalizeEmail(STAFF_EMAIL) || password !== STAFF_PASSWORD) {
+    return res.status(401).json({ success: false, error: 'Invalid staff credentials' });
   }
+  const staffUser = {
+    id: 'usr_staff_01', email: cleanEmail, name: 'SpotBukk Staff',
+    fullName: 'SpotBukk Staff', role: 'STAFF', authenticationProvider: 'STAFF'
+  };
+  const token = jwt.sign(staffUser, JWT_SECRET, {
+    expiresIn: '12h', issuer: 'spotbukk-api', audience: 'spotbukk-client'
+  });
+  return res.status(200).json({ success: true, token, user: staffUser });
 });
 
-// 5. General / Legacy Auth Login Endpoint (Strict RBAC: Never allows client to force ADMIN)
+// Legacy identity-only login is disabled to prevent session creation from client-supplied claims.
 app.post('/api/auth/login', (req, res) => {
-  const { email, password, role } = req.body;
-  const cleanEmail = normalizeEmail(email);
-
-  // If client requests ADMIN, password verification is strictly mandatory!
-  if (role === 'ADMIN' || (cleanEmail && cleanEmail.includes('admin'))) {
-    const adminRecord = TRUSTED_ADMINS.find(a => normalizeEmail(a.email) === cleanEmail);
-    const isValidPassword = password === ADMIN_PASSWORD || password === 'admin123' || password === 'SpotBukkAdmin2026!';
-
-    if (adminRecord && isValidPassword) {
-      const user = {
-        id: adminRecord.id,
-        email: adminRecord.email,
-        name: adminRecord.name,
-        fullName: adminRecord.fullName,
-        role: 'ADMIN',
-        authenticationProvider: 'ADMIN'
-      };
-      const token = jwt.sign(user, JWT_SECRET, { expiresIn: '12h' });
-      return res.status(200).json({ success: true, token, user });
-    }
-
-    // Deny unauthorized attempts to claim ADMIN
-    return res.status(401).json({
-      success: false,
-      error: 'Invalid administrator credentials. Cannot assign ADMIN role.'
-    });
-  }
-
-  // End user login (Strictly END_USER role)
-  const user = {
-    id: `usr_${crypto.randomBytes(4).toString('hex')}`,
-    email: cleanEmail || 'attendee@spotbukk.com',
-    name: (cleanEmail && cleanEmail.split('@')[0]) || 'Guest Attendee',
-    fullName: (cleanEmail && cleanEmail.split('@')[0]) || 'Guest Attendee',
-    role: 'END_USER',
-    authenticationProvider: 'EMAIL'
-  };
-
-  const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
-  return res.status(200).json({ success: true, token, user });
+  return res.status(410).json({
+    success: false,
+    error: 'This legacy login endpoint is disabled. Use a verified authentication method.'
+  });
 });
 
 // 6. Get Current Authenticated User (Session Verification)
