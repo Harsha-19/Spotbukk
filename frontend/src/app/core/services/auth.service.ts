@@ -86,18 +86,16 @@ export class AuthService {
   /**
    * Option 1: Continue with Google (End User)
    */
-  async loginWithGoogle(credential?: string, userInfo?: { email?: string; name?: string; picture?: string }): Promise<User> {
+  async loginWithGoogle(credential: string): Promise<User> {
     this.isLoading.set(true);
     try {
-      const payload = {
-        credential,
-        email: userInfo?.email || 'guest.curator@gmail.com',
-        name: userInfo?.name || 'SpotBukk Attendee',
-        picture: userInfo?.picture || ''
-      };
+      if (typeof credential !== 'string' || !credential.trim()) {
+        throw new Error('Google did not provide an ID token. Please try signing in again.');
+      }
 
+      // The backend verifies the signed Google ID token; profile fields from the browser are not trusted.
       const res = await firstValueFrom(
-        this.http.post<AuthResponse>(`${this.apiUrl}/api/auth/google`, payload)
+        this.http.post<AuthResponse>(`${this.apiUrl}/api/auth/google`, { credential })
       );
 
       if (res && res.success && res.token && res.user) {
