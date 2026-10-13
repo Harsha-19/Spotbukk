@@ -103,14 +103,6 @@ import { ToastService } from '../../core/services/toast.service';
               </span>
             </button>
 
-            <!-- Demo Credentials Hint (Section 13) -->
-            <div class="demo-creds-hint">
-              <span class="hint-label">Demo Staff Account:</span>
-              <div class="hint-details">
-                <code>staff&#64;spotbukk.com / SpotBukkStaff2026!</code>
-                <span class="hint-user-role">Arjun Menon &bull; Assigned to House of Sundown</span>
-              </div>
-            </div>
           </form>
 
           <!-- Alternative Links -->
