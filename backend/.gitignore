@@ -1,7 +1,12 @@
 node_modules/
 .env
+.env.*
+!.env.example
 *.csv
 .DS_Store
 npm-debug.log*
 uploads/*
 !uploads/.gitkeep
+data/*.sqlite
+data/*.sqlite3
+data/*.db
