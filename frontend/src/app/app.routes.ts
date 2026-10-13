@@ -28,8 +28,14 @@ import { StaffCheckInComponent } from './staff/check-in/staff-check-in.component
 import { StaffActivityComponent } from './staff/activity/staff-activity.component';
 import { StaffEventsComponent } from './staff/events/staff-events.component';
 import { StaffLoginComponent } from './staff/login/staff-login.component';
+import { StaffMediaComponent } from './staff/media/staff-media.component';
+import { AdminMediaComponent } from './admin/media/admin-media.component';
 
 export const routes: Routes = [
+  // Host Portal Aliases
+  { path: 'host', redirectTo: 'staff', pathMatch: 'full' },
+  { path: 'host/media', redirectTo: 'staff/media', pathMatch: 'full' },
+
   // Staff Login Route
   { path: 'staff/login', component: StaffLoginComponent, title: 'Staff Sign In — SpotBukk' },
 
@@ -43,7 +49,8 @@ export const routes: Routes = [
       { path: '', component: StaffDashboardComponent, title: 'Staff Portal — SpotBukk' },
       { path: 'check-in', component: StaffCheckInComponent, title: 'Door Clearance & Check-In — SpotBukk Staff' },
       { path: 'activity', component: StaffActivityComponent, title: 'Check-In Activity — SpotBukk Staff' },
-      { path: 'events', component: StaffEventsComponent, title: 'Assigned Events — SpotBukk Staff' }
+      { path: 'events', component: StaffEventsComponent, title: 'Assigned Events — SpotBukk Staff' },
+      { path: 'media', component: StaffMediaComponent, title: 'Host Photos & Videos — SpotBukk' }
     ]
   },
   // Public Routes (Accessible to everyone)
@@ -80,6 +87,7 @@ export const routes: Routes = [
       { path: 'registrations', component: AdminRegistrationsComponent, title: 'Registrations Ledger — SpotBukk Admin' },
       { path: 'payments', component: AdminPaymentsComponent, title: 'Financial Audit — SpotBukk Admin' },
       { path: 'checkins', component: AdminCheckinsComponent, title: 'Door Clearance — SpotBukk Admin' },
+      { path: 'media', component: AdminMediaComponent, title: 'Media Moderation & Governance — SpotBukk Admin' },
       { path: 'analytics', component: AdminAnalyticsComponent, title: 'Intelligence & Analytics — SpotBukk Admin' }
     ]
   },

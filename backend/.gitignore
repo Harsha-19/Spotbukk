@@ -3,3 +3,5 @@ node_modules/
 *.csv
 .DS_Store
 npm-debug.log*
+uploads/*
+!uploads/.gitkeep

@@ -1,14 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { StaffDataService } from '../services/staff-data.service';
 import { StaffEvent } from '../../core/data/staff-seed.data';
+import { MediaUploadModalComponent } from '../../shared/components/media-upload-modal/media-upload-modal.component';
 
 @Component({
   selector: 'app-staff-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, MediaUploadModalComponent],
   template: `
     <div class="staff-dashboard container">
       <!-- Portal Header Section -->
@@ -23,7 +24,31 @@ import { StaffEvent } from '../../core/data/staff-seed.data';
         </div>
 
         <div class="hero-actions">
-          <a routerLink="/staff/check-in" class="btn btn-primary btn-lg check-in-cta">
+          <!-- Prominent "Upload Photos & Videos" Button -->
+          <button
+            type="button"
+            id="btn-host-upload-photos-videos"
+            class="btn btn-primary btn-lg upload-media-btn"
+            (click)="isUploadModalOpen.set(true)"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload Photos & Videos
+          </button>
+
+          <a routerLink="/staff/media" class="btn btn-subtle btn-lg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            Media Gallery
+          </a>
+
+          <a routerLink="/staff/check-in" class="btn btn-subtle btn-lg check-in-cta">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
               <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
@@ -31,7 +56,7 @@ import { StaffEvent } from '../../core/data/staff-seed.data';
               <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
               <rect x="7" y="7" width="10" height="10" rx="1"/>
             </svg>
-            Launch QR Scanner
+            Door Clearance
           </a>
         </div>
       </header>
@@ -191,6 +216,12 @@ import { StaffEvent } from '../../core/data/staff-seed.data';
           </div>
         </div>
       </section>
+
+      <!-- Media Upload Modal -->
+      <app-media-upload-modal
+        [isOpen]="isUploadModalOpen()"
+        (close)="isUploadModalOpen.set(false)"
+      ></app-media-upload-modal>
     </div>
   `,
   styles: [`
@@ -555,6 +586,8 @@ export class StaffDashboardComponent {
   private readonly authService = inject(AuthService);
   readonly staffData = inject(StaffDataService);
   private readonly router = inject(Router);
+
+  readonly isUploadModalOpen = signal<boolean>(false);
 
   get staffFirstName(): string {
     const fullName = this.authService.currentUser()?.name || this.authService.currentUser()?.fullName || 'Arjun Menon';
