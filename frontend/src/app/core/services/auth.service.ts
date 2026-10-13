@@ -240,46 +240,19 @@ export class AuthService {
   async loginAsStaff(email: string, password: string, notify = true): Promise<User> {
     this.isLoading.set(true);
     try {
-      const cleanEmail = (email || '').trim().toLowerCase();
-      // First attempt backend staff login if available
-      try {
-        const res = await firstValueFrom(
-          this.http.post<AuthResponse>(`${this.apiUrl}/api/auth/staff/login`, { email, password })
-        );
-        if (res && res.success && res.token && res.user) {
-          this.saveSession(res.token, res.user);
-          if (notify) {
-            this.toast.success('Staff Clearance Granted', `Authenticated as Staff: ${res.user.fullName || res.user.name}`);
-          }
-          return res.user;
-        }
-      } catch {
-        // Fallback to local demo staff credentials if backend endpoint is unavailable
+      const res = await firstValueFrom(
+        this.http.post<AuthResponse>(`${this.apiUrl}/api/auth/staff/login`, { email, password })
+      );
+
+      if (!res || !res.success || !res.token || !res.user || res.user.role !== 'STAFF') {
+        throw new Error(res?.error || 'Staff authentication rejected');
       }
 
-      // Demo Staff Authentication (Seed Staff Account)
-      const isStaffUser = cleanEmail === 'staff@spotbukk.com' || cleanEmail.includes('staff');
-      const isCorrectPassword = password === 'SpotBukkStaff2026!' || password === 'staff123' || password === 'SpotBukkAdmin2026!';
-
-      if (isStaffUser && isCorrectPassword) {
-        const staffUser: User = {
-          id: 'usr_staff_01',
-          email: 'staff@spotbukk.com',
-          name: 'Arjun Menon',
-          fullName: 'Arjun Menon',
-          role: 'STAFF',
-          authenticationProvider: 'STAFF' as any,
-          createdAt: new Date().toISOString()
-        };
-        const mockStaffToken = 'spotbukk_staff_demo_token_' + Date.now();
-        this.saveSession(mockStaffToken, staffUser);
-        if (notify) {
-          this.toast.success('Staff Clearance Granted', 'Welcome back, Arjun');
-        }
-        return staffUser;
+      this.saveSession(res.token, res.user);
+      if (notify) {
+        this.toast.success('Staff Clearance Granted', `Authenticated as Staff: ${res.user.fullName || res.user.name}`);
       }
-
-      throw new Error('Invalid staff credentials. Please check your email and password.');
+      return res.user;
     } catch (err: any) {
       const msg = err.error?.error || err.message || 'Staff authentication rejected';
       this.toast.error('401 Unauthorized', msg);
