@@ -18,6 +18,7 @@ This change is intentionally limited to the first security foundation. It does n
 - `backend/.env.example`: replace credential values with placeholders and document required secrets.
 - `backend/config/env.js`: validate required environment values without providing insecure defaults.
 - `backend/auth/google-token-verifier.js`: verify Google ID token claims with Google's tokeninfo endpoint, including audience, issuer, expiry, and verified email.
+- `frontend/src/app/core/services/auth.service.ts`: stop sending placeholder identity/profile data and require a real Google ID token.
 - `backend/server.js`: use required JWT/admin secrets, remove known fallback passwords, and make Google login rely only on verified token claims. The legacy identity-only login route is disabled so a caller cannot mint an authenticated session by submitting an email.
 - `backend/tests/security-foundation.test.js` and `backend/package.json`: add Node's built-in test runner coverage for the new security helpers.
 - `backend/.gitignore`: ignore local environment variants and common local database artifacts while retaining the example file.
@@ -66,3 +67,8 @@ The tests use Node's built-in `node:test` and mocked Google responses. They do n
 - Select PostgreSQL or another explicit database and add versioned migrations.
 - Add persistent sessions/revocation, rate limiting, centralized error handling, audit logging and security headers.
 - Harden media storage, booking inventory, Razorpay webhooks, and production deployment.
+
+
+## Compatibility note
+
+This baseline adds JWT issuer/audience validation and removes the legacy identity-only login route. Existing JWTs issued before this change will not pass the new verifier; users will need to sign in again after deployment. Confirm no other API consumer depends on `POST /api/auth/login` before release. The Angular Google Identity Services integration must provide the actual ID token string to `loginWithGoogle(credential)`.
