@@ -1,9 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { EventService, CheckoutSession } from '../../core/services/event.service';
 import { EventItem, TicketTier } from '../../core/models/event.model';
 import { ToastService } from '../../core/services/toast.service';
+import { MediaService } from '../../core/services/media.service';
+import { MediaItem } from '../../core/models/media.model';
 
 @Component({
   selector: 'app-event-detail',
@@ -110,6 +112,68 @@ import { ToastService } from '../../core/services/toast.service';
                 </div>
                 <div class="time-col">
                   <span class="set-time">{{ item.time }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Host Media & Moments Section (Real Uploads Only) -->
+          <section class="editorial-section">
+            <div class="section-title-row">
+              <div>
+                <span class="editorial-kicker">Atmosphere & Moments</span>
+                <h2 class="sub-heading">Host Media & Captures</h2>
+              </div>
+              <span class="media-count-badge" *ngIf="hostMedia().length > 0">
+                {{ hostMedia().length }} Moment{{ hostMedia().length === 1 ? '' : 's' }}
+              </span>
+            </div>
+
+            <!-- Mandatory Empty State when no media uploaded yet -->
+            <div *ngIf="hostMedia().length === 0" class="media-empty-card card-base">
+              <div class="empty-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+              <p class="media-empty-text">No photos or videos uploaded yet.</p>
+              <span class="media-empty-sub">Atmosphere moments and audio-visual captures will appear here once published by the host.</span>
+            </div>
+
+            <!-- Real Uploads Gallery Grid -->
+            <div *ngIf="hostMedia().length > 0" class="host-gallery-grid">
+              <div
+                *ngFor="let item of hostMedia()"
+                class="gallery-media-item card-base"
+                (click)="openMediaViewer(item)"
+              >
+                <img
+                  *ngIf="item.mediaType === 'image'"
+                  [src]="mediaService.getMediaUrl(item.url)"
+                  [alt]="item.originalFilename"
+                  class="gallery-img"
+                  loading="lazy"
+                />
+
+                <div *ngIf="item.mediaType === 'video'" class="gallery-video-wrap">
+                  <video
+                    [src]="mediaService.getMediaUrl(item.url)"
+                    class="gallery-video"
+                    preload="metadata"
+                    muted
+                  ></video>
+                  <div class="video-play-badge">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                  </div>
+                  <span class="vid-tag">VIDEO</span>
+                </div>
+
+                <div class="media-hover-overlay">
+                  <span class="expand-label">Expand</span>
                 </div>
               </div>
             </div>
@@ -248,9 +312,264 @@ import { ToastService } from '../../core/services/toast.service';
           </div>
         </aside>
       </div>
+
+      <!-- Media Lightbox / Video Viewer Modal -->
+      <div
+        *ngIf="activeMediaItem()"
+        class="lightbox-overlay"
+        (click)="closeMediaViewer()"
+      >
+        <div class="lightbox-dialog glass-panel" (click)="$event.stopPropagation()">
+          <button class="dialog-close" (click)="closeMediaViewer()">&times;</button>
+
+          <div class="dialog-media-container">
+            <img
+              *ngIf="activeMediaItem()?.mediaType === 'image'"
+              [src]="mediaService.getMediaUrl(activeMediaItem()?.url)"
+              [alt]="activeMediaItem()?.originalFilename"
+              class="inspect-image"
+            />
+            <video
+              *ngIf="activeMediaItem()?.mediaType === 'video'"
+              [src]="mediaService.getMediaUrl(activeMediaItem()?.url)"
+              class="inspect-video"
+              controls
+              autoplay
+            ></video>
+          </div>
+
+          <div class="dialog-footer">
+            <div class="dialog-meta">
+              <h4>{{ activeMediaItem()?.originalFilename }}</h4>
+              <p>
+                Captured by Host {{ activeMediaItem()?.userName }} &bull;
+                {{ activeMediaItem()?.createdAt | date: 'mediumDate' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
+    .section-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    .media-count-badge {
+      font-size: 0.76rem;
+      background: rgba(207, 160, 82, 0.12);
+      border: 1px solid rgba(207, 160, 82, 0.3);
+      color: #cfa052;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .media-empty-card {
+      padding: 36px 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .empty-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(207, 160, 82, 0.08);
+      border: 1px solid rgba(207, 160, 82, 0.2);
+      color: #cfa052;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .media-empty-text {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      margin: 0;
+    }
+
+    .media-empty-sub {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.5);
+      max-width: 420px;
+    }
+
+    .host-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .gallery-media-item {
+      height: 160px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      background: #000;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .gallery-media-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .gallery-img, .gallery-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .gallery-media-item:hover .gallery-img {
+      transform: scale(1.05);
+    }
+
+    .gallery-video-wrap {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .video-play-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #cfa052;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .vid-tag {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.7);
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .media-hover-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 8px;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+      display: flex;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .gallery-media-item:hover .media-hover-overlay {
+      opacity: 1;
+    }
+
+    .expand-label {
+      font-size: 0.7rem;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* Lightbox Modal */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .lightbox-dialog {
+      max-width: 900px;
+      width: 100%;
+      background: #11141c;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .dialog-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 1.6rem;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .dialog-media-container {
+      max-height: 70vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    .inspect-image, .inspect-video {
+      max-width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+    }
+
+    .dialog-footer {
+      padding: 16px 20px;
+      background: #141720;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .dialog-meta h4 {
+      margin: 0 0 4px;
+      font-size: 0.98rem;
+      color: #fff;
+    }
+
+    .dialog-meta p {
+      margin: 0;
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
     .detail-hero {
       position: relative;
       min-height: 480px;
@@ -788,6 +1107,10 @@ export class EventDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly eventService = inject(EventService);
   private readonly toast = inject(ToastService);
+  readonly mediaService = inject(MediaService);
+
+  readonly hostMedia = signal<MediaItem[]>([]);
+  readonly activeMediaItem = signal<MediaItem | null>(null);
 
   event?: EventItem;
   selectedTier?: TicketTier;
@@ -812,6 +1135,7 @@ export class EventDetailComponent implements OnInit {
       const id = params.get('id');
       if (id) {
         this.event = this.eventService.getEventById(id);
+        this.loadHostMedia(id);
         if (this.event && this.event.ticketTiers.length > 0) {
           // Select first available tier
           const available = this.event.ticketTiers.find(t => t.availableQuantity > 0);
@@ -819,6 +1143,19 @@ export class EventDetailComponent implements OnInit {
         }
       }
     });
+  }
+
+  async loadHostMedia(eventId: string): Promise<void> {
+    const list = await this.mediaService.getEventMedia(eventId);
+    this.hostMedia.set(list);
+  }
+
+  openMediaViewer(item: MediaItem): void {
+    this.activeMediaItem.set(item);
+  }
+
+  closeMediaViewer(): void {
+    this.activeMediaItem.set(null);
   }
 
   selectTier(tier: TicketTier): void {

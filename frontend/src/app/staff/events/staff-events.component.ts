@@ -1,13 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { StaffDataService } from '../services/staff-data.service';
 import { StaffEvent } from '../../core/data/staff-seed.data';
+import { MediaUploadModalComponent } from '../../shared/components/media-upload-modal/media-upload-modal.component';
 
 @Component({
   selector: 'app-staff-events',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, MediaUploadModalComponent],
   template: `
     <div class="staff-events-page container">
       <!-- Breadcrumb -->
@@ -92,11 +93,11 @@ import { StaffEvent } from '../../core/data/staff-seed.data';
             <div class="progress-fill" [style.width.%]="getProgressPercent(event)"></div>
           </div>
 
-          <!-- Action Button -->
+          <!-- Action Buttons -->
           <div class="card-action-row">
             <button
               type="button"
-              class="btn btn-primary btn-lg w-full"
+              class="btn btn-primary btn-lg action-main-btn"
               (click)="openCheckIn(event.id)"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -105,9 +106,29 @@ import { StaffEvent } from '../../core/data/staff-seed.data';
               </svg>
               OPEN CHECK-IN
             </button>
+            <button
+              type="button"
+              class="btn btn-subtle btn-lg action-upload-btn"
+              (click)="openUploadModal(event)"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Upload Media
+            </button>
           </div>
         </div>
       </div>
+
+      <!-- Media Upload Modal -->
+      <app-media-upload-modal
+        [isOpen]="isUploadModalOpen()"
+        [fixedEventId]="selectedEventId()"
+        [fixedEventTitle]="selectedEventTitle()"
+        (close)="isUploadModalOpen.set(false)"
+      ></app-media-upload-modal>
     </div>
   `,
   styles: [`
@@ -303,14 +324,43 @@ import { StaffEvent } from '../../core/data/staff-seed.data';
       transition: width 0.4s ease;
     }
 
-    .w-full {
+    .card-action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .action-main-btn {
       width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .action-upload-btn {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    @media (max-width: 580px) {
+      .card-action-row {
+        grid-template-columns: 1fr;
+      }
     }
   `]
 })
 export class StaffEventsComponent {
   readonly staffData = inject(StaffDataService);
   private readonly router = inject(Router);
+
+  readonly isUploadModalOpen = signal<boolean>(false);
+  readonly selectedEventId = signal<string>('');
+  readonly selectedEventTitle = signal<string>('');
 
   getProgressPercent(event: StaffEvent): number {
     if (!event.expectedGuests) return 0;
@@ -321,5 +371,11 @@ export class StaffEventsComponent {
     this.router.navigate(['/staff/check-in'], {
       queryParams: { eventId }
     });
+  }
+
+  openUploadModal(event: StaffEvent): void {
+    this.selectedEventId.set(event.id);
+    this.selectedEventTitle.set(event.title);
+    this.isUploadModalOpen.set(true);
   }
 }

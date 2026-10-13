@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const { MOCK_BOOKINGS } = require('./mock-registrations');
 
 dotenv.config();
@@ -33,6 +34,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Helper to get active credentials from environment
 function getCredentials() {
@@ -798,6 +800,12 @@ function handleVerifyQr(req, res) {
 app.post('/api/tickets/verify-qr', authenticateToken, requireAdmin, handleVerifyQr);
 app.post('/api/check-in/verify', authenticateToken, requireAdmin, handleVerifyQr);
 
+// ===================================================================
+// HOST MEDIA UPLOAD & ADMIN MODERATION ENGINE
+// ===================================================================
+const { createMediaRouter } = require('./media-routes');
+app.use('/api/media', createMediaRouter({ authenticateToken, requireAdmin }));
+
 // Health check endpoint
 app.get('/', (req, res) => {
   res.json({
@@ -910,8 +918,8 @@ app.listen(PORT, () => {
   console.log(`Endpoints active:`);
   console.log(` - POST /api/auth/login`);
   console.log(` - GET  /api/auth/me`);
-  console.log(` - POST /api/tickets/verify-qr (ADMIN ONLY)`);
-  console.log(` - POST /api/create-order`);
-  console.log(` - POST /api/verify-payment`);
+  console.log(` - GET  /api/media`);
+  console.log(` - POST /api/media/upload (HOST / STAFF / ADMIN)`);
+  console.log(` - PATCH /api/media/:id/moderate (ADMIN ONLY)`);
   console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
 });
