@@ -12,6 +12,7 @@ test('requireEnv returns a trimmed value', () => {
 test('requireEnv rejects missing and too-short values', () => {
   assert.throws(() => requireEnv('JWT_SECRET', { minLength: 8 }, {}), /JWT_SECRET/);
   assert.throws(() => requireEnv('JWT_SECRET', { minLength: 8 }, { JWT_SECRET: 'short' }), /JWT_SECRET/);
+  assert.throws(() => requireEnv('JWT_SECRET', { minLength: 8 }, { JWT_SECRET: 'REPLACE_WITH_A_REAL_SECRET_VALUE' }), /JWT_SECRET/);
 });
 
 test('Google verifier rejects missing credential and client ID without network access', async () => {
