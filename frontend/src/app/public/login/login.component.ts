@@ -417,10 +417,6 @@ type VerificationStep = 'input' | 'otp';
                 </span>
               </button>
 
-              <div class="demo-creds-hint">
-                <span>Default test administrator credentials:</span>
-                <code>admin&#64;spotbukk.com / SpotBukkAdmin2026!</code>
-              </div>
             </form>
           </div>
 
