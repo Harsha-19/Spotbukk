@@ -33,7 +33,8 @@ Required for startup:
 
 Required for Google login:
 - `GOOGLE_CLIENT_ID`: the exact OAuth client ID used by the Angular Google Identity Services client.
-- The frontend must send the Google-issued ID token in `credential`; body-supplied email/name/picture are not trusted.
+- The backend accepts only the Google-issued ID token in `credential`; body-supplied email/name/picture are not trusted.
+- The existing Angular Google button does not yet acquire a Google Identity Services ID token. It now fails closed instead of fabricating an identity. Complete the GIS callback/client-ID wiring before enabling Google login.
 
 Staff login must be configured with `STAFF_EMAIL` and `STAFF_PASSWORD`; without them, staff login should fail closed.
 
@@ -71,4 +72,4 @@ The tests use Node's built-in `node:test` and mocked Google responses. They do n
 
 ## Compatibility note
 
-This baseline adds JWT issuer/audience validation and removes the legacy identity-only login route. Existing JWTs issued before this change will not pass the new verifier; users will need to sign in again after deployment. Confirm no other API consumer depends on `POST /api/auth/login` before release. The Angular Google Identity Services integration must provide the actual ID token string to `loginWithGoogle(credential)`.
+This baseline adds JWT issuer/audience validation and removes the legacy identity-only login route. Existing JWTs issued before this change will not pass the new verifier; users will need to sign in again after deployment. Confirm no other API consumer depends on `POST /api/auth/login` before release. The Angular Google Identity Services integration must provide the actual ID token string to `loginWithGoogle(credential)`. The current button handler still needs that integration; Google login is intentionally not considered launch-ready in this patch.
