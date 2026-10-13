@@ -86,7 +86,7 @@ export class AuthService {
   /**
    * Option 1: Continue with Google (End User)
    */
-  async loginWithGoogle(credential: string): Promise<User> {
+  async loginWithGoogle(credential?: string): Promise<User> {
     this.isLoading.set(true);
     try {
       if (typeof credential !== 'string' || !credential.trim()) {
